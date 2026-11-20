@@ -1,0 +1,27 @@
+src/convert.ts
+  s_01416be87042f9::t_62901cc003d0de 747-749,751-760
+src/program.ts
+  s_01416be87042f9::t_068a0ac56476a8 438-451,487
+test/convert.test.ts
+  s_01416be87042f9::t_67d579bdf87df8 852-853,889-899
+test/fixtures/builtins-types.ts
+  s_01416be87042f9::t_e66fd35a35c43c 1-2
+test/fixtures/builtins.ts
+  s_01416be87042f9::t_4505166979c35a 7-8,15-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7f7263cf45ec702b10761042fd39b3705b23110e",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
