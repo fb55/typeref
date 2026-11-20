@@ -1,0 +1,23 @@
+src/astro.ts
+  s_01416be87042f9::t_17d18a03c1a0da 20-21,27,60-65,76-79,88-91,149-150,163,166-167,189-193,199-204
+src/project.ts
+  s_01416be87042f9::t_60c7e4dcc57c6c 97-109,247
+test/astro.test.ts
+  s_01416be87042f9::t_ecc25bc20ca8ed 15-22,24-25,38-44,49,61,66-69,86-88,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf12290c1be8dc958ff83d5836ebb8b2ddd19da2",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
