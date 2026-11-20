@@ -1,11 +1,12 @@
 # Reviews pull requests from this repository with Claude, as inline comments.
+# The plugin reviews a pull request once; Copilot reviews each push.
 # Needs the Claude GitHub App (https://github.com/apps/claude) and a
 # CLAUDE_CODE_OAUTH_TOKEN secret from `claude setup-token`; skipped without it.
 name: Claude review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    types: [opened, ready_for_review]
 
 concurrency:
   group: claude-review-${{ github.event.pull_request.number }}
