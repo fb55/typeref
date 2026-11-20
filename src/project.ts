@@ -198,7 +198,7 @@ function entryPoints(
         ? resolved
         : undefined;
     if (file === undefined) {
-      if (requested === undefined) return [];
+      if (requested === undefined || isOptional) return [];
       throw new Error(
         `No declarations for "${specifier}" of ${packageName || directory}. Build the package first.`,
       );
