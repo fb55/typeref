@@ -188,12 +188,18 @@ export class Router {
     ) {
       const base = page.slice(0, -this.extension.length);
       const categories = sections(children, declaration.comment).map(
-        (section): Page => ({
-          url: this.fileName(`${base}/${toSlug(section.title) || "_"}`),
-          declaration,
-          kind: "category",
-          section,
-        }),
+        (section): Page => {
+          // Sites serve `index` pages as their directories' (the declaration's).
+          const name = toSlug(section.title);
+          return {
+            url: this.fileName(
+              `${base}/${name === "" || name === "index" ? `_${name}` : name}`,
+            ),
+            declaration,
+            kind: "category",
+            section,
+          };
+        },
       );
       for (const category of categories) {
         for (const member of category.section!.members) {

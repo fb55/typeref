@@ -480,6 +480,9 @@ class HtmlWriter {
         ]
       : (categories?.map((category) => category.section!) ??
         sections(current.children ?? []));
+    if (list.every((section) => section.members.length === 0)) {
+      return undefined;
+    }
     // The index of categories' pages links to members on those pages.
     const label = categories ? "Members" : "On this page";
     return h(

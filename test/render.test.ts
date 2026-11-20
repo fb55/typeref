@@ -119,12 +119,12 @@ describe("renderMarkdown of special cases", () => {
 
   it("writes pages for the categories of declarations with enough members", () => {
     const project = fixture(["rendering"]);
-    const split = renderMarkdown(project, { categoryPages: 3 });
+    const split = renderMarkdown(project, { categoryPages: 4 });
     expect([
       [...split.keys()].filter((path) => path.startsWith("interfaces/Multi")),
       split.get("interfaces/Multi.md"),
       split.get("interfaces/Multi/b.md"),
-      renderMarkdown(project, { categoryPages: 4 }).has(
+      renderMarkdown(project, { categoryPages: 5 }).has(
         "interfaces/Multi/a.md",
       ),
     ]).toStrictEqual([
@@ -132,6 +132,8 @@ describe("renderMarkdown of special cases", () => {
         "interfaces/Multi.md",
         "interfaces/Multi/a.md",
         "interfaces/Multi/b.md",
+        // Not `index.md`, which sites serve as the directory's page.
+        "interfaces/Multi/_index.md",
         "interfaces/Multi/other.md",
       ],
       expect.stringContaining(
@@ -278,14 +280,16 @@ describe("renderHtml", () => {
     const page = files.get("interfaces/Multi/b.html")!;
     expect([
       page,
-      // Its navigation lists only the members on it.
+      // Its navigation lists only the members on it, if any.
       /<nav class="toc".*?<\/nav>/u.exec(page)?.[0].match(/<li>/gu)?.length,
+      files.get("interfaces/Multi/_index.html")!.includes('class="toc"'),
       index,
       // Old links to members find them in the index, once.
       index.match(/id="both"/gu)?.length,
     ]).toStrictEqual([
       expect.stringContaining('<p class="also"><a href="a.html#both">'),
       1,
+      false,
       expect.stringMatching(
         /aria-label="Members">.*<li><a href="Multi\/a.html#both">both<\/a><\/li>/u,
       ),

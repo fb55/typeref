@@ -25,6 +25,11 @@ export interface Multi {
   both: string;
   /** @category B */
   second: string;
+  /**
+   * @category A
+   * @category Index
+   */
+  listed: string;
   plain: number;
 }
 
