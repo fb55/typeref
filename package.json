@@ -1,6 +1,6 @@
 {
   "name": "typeref",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "API documentation for TypeScript libraries, read from their published declaration files: HTML sites and Markdown for static site generators",
   "keywords": [
     "api",
