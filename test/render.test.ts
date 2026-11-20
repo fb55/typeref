@@ -249,6 +249,17 @@ describe("renderHtml", () => {
     );
   });
 
+  it("publishes an index of its URLs by qualified name", async () => {
+    const files = await renderHtml(fixture(["namespaces"]));
+    expect(JSON.parse(files.get("symbols.json")!)).toMatchObject({
+      version: 1,
+      symbols: {
+        "Outer.Deep.Options": "interfaces/Outer.Deep.Options.html",
+        "Outer.Deep.Options.b": "interfaces/Outer.Deep.Options.html#b",
+      },
+    });
+  });
+
   it("links to members on the pages of their categories", async () => {
     const files = await renderHtml(fixture(["rendering"]), {
       categoryPages: 3,

@@ -17,6 +17,7 @@ import { convert, type EntryPoint } from "./convert.ts";
 import type { Project } from "./model.ts";
 import { Program } from "./program.ts";
 import { Sources } from "./source.ts";
+import type { Symbols } from "./symbols.ts";
 
 export interface Config {
   /**
@@ -37,7 +38,9 @@ export interface Config {
   readme?: string | false;
   /**
    * Links to the docs of dependencies, by package name: their URL, or a
-   * template with `{kind}` and `{name}`, for sites with TypeDoc's URLs.
+   * template with `{kind}` and `{name}`. Sites built by typeref publish an
+   * index of their URLs, which builds fetch; links to others follow TypeDoc's
+   * URLs.
    */
   links?: Record<string, string>;
   /** Markdown: the path the pages are served under, e.g. `/docs/api/`. */
@@ -194,9 +197,14 @@ function entryPoints(
  *
  * @param path The project's directory.
  * @param config The configuration.
+ * @param symbols The indexes of the docs of dependencies, by package name.
  * @returns The project.
  */
-export function loadProject(path: string, config: Config = {}): Project {
+export function loadProject(
+  path: string,
+  config: Config = {},
+  symbols?: Map<string, Symbols>,
+): Project {
   const root = resolve(path);
   const program = new Program();
   const json = readPackage(root);
@@ -219,6 +227,7 @@ export function loadProject(path: string, config: Config = {}): Project {
     entryPoints: entries.map(({ point }) => point),
     roots: directories,
     ...(config.links && { links: config.links }),
+    ...(symbols && { symbols }),
     ...(config.shouldDocumentUnexported && { shouldDocumentUnexported: true }),
   });
   const sources = new Sources();

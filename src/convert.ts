@@ -47,6 +47,7 @@ import {
   type Symbol,
 } from "./program.ts";
 import { Sources } from "./source.ts";
+import type { Symbols } from "./symbols.ts";
 
 export interface EntryPoint {
   /** The module's name: the package's name, and the subpath for others. */
@@ -66,6 +67,11 @@ export interface ConvertOptions {
   roots: string[];
   /** Links to the docs of dependencies, by package name. */
   links?: Record<string, string>;
+  /**
+   * The indexes of the docs of dependencies, by package name. Their links
+   * go to what the indexes list, and nowhere else.
+   */
+  symbols?: Map<string, Symbols>;
   /** Whether to document declarations that are used but not exported. */
   shouldDocumentUnexported?: boolean;
 }
@@ -814,8 +820,20 @@ class Converter {
     const packageName = /.*node_modules[/\\](?<name>(?:@[^/\\]+[/\\])?[^/\\]+)/u
       .exec(symbol.file.path)
       ?.groups?.["name"]?.replaceAll("\\", "/");
-    const base =
-      packageName === undefined ? undefined : this.options.links?.[packageName];
+    if (packageName === undefined) return undefined;
+    const index = this.options.symbols?.get(packageName);
+    if (index) {
+      // Members of namespaces by their qualified names.
+      const name = [
+        ...symbol.containers.flatMap((container) =>
+          declaredNames(container).map(([part]) => part),
+        ),
+        symbol.name,
+      ].join(".");
+      const url = index.get(name);
+      return url === undefined ? undefined : { kind: "url", url };
+    }
+    const base = this.options.links?.[packageName];
     const kind = kindOf(symbol.nodes);
     const directory = kind && kindDirectories[kind];
     if (base === undefined || base === "" || directory === undefined) {

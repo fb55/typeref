@@ -55,6 +55,23 @@ describe("loadProject", () => {
     ]);
   });
 
+  it("links to dependencies through the indexes of their docs", () => {
+    const project = loadProject(
+      join(fixtures, "linked"),
+      { links: { dep: "https://dep.example/" } },
+      new Map([["dep", new Map([["Tools.Tool", "https://dep.example/t"]])]]),
+    );
+    const [signature] = project.modules[0].children!.find(
+      (child) => child.name === "use",
+    )!.signatures!;
+    // What the index does not list is not linked.
+    expect(
+      signature.parameters.map((parameter) =>
+        parameter.type?.type === "reference" ? parameter.type.target : null,
+      ),
+    ).toStrictEqual([{ kind: "url", url: "https://dep.example/t" }, undefined]);
+  });
+
   it("places declarations whose sources are not on disk in their files", () => {
     const project = loadProject(join(fixtures, "remote-map"));
     expect(project.modules[0].children![0].sources).toStrictEqual([

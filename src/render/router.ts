@@ -10,6 +10,7 @@
 import GithubSlugger, { slug as toSlug } from "github-slugger";
 
 import type { Declaration, Kind, Project } from "../model.ts";
+import type { SymbolIndex } from "../symbols.ts";
 import { isCategorized, sections, type Section } from "./shared.ts";
 
 /** The directories of pages, by kind. */
@@ -45,6 +46,9 @@ export interface RouterOptions {
    */
   categoryPages?: number;
 }
+
+/** Where sites publish the index of their URLs, for others to link to. */
+export const indexUrl = "symbols.json";
 
 /** Kinds whose members are documented on their pages, not on their own. */
 const splittable = new Set<Kind>(["Class", "Interface", "Enum"]);
@@ -98,6 +102,7 @@ export class Router {
   /** The URL of the project's index of exports. */
   readonly indexUrl: string;
   private readonly extension: string;
+  private readonly project: Project;
 
   /**
    * @param project The project.
@@ -110,6 +115,7 @@ export class Router {
     options: RouterOptions = {},
   ) {
     this.extension = extension;
+    this.project = project;
     this.categoryPagesFrom = options.categoryPages ?? Infinity;
     if (project.readme !== undefined && project.readme !== "") {
       this.pages.push({ url: this.fileName("index"), kind: "readme" });
@@ -202,6 +208,31 @@ export class Router {
       this.objectMembers.add(child);
       this.route(child, declaration, page);
     }
+  }
+
+  /**
+   * Of names declared more than once (in several entry points, or as static
+   * and instance members), the first wins.
+   *
+   * @returns The index of the project's URLs, for others to link to.
+   */
+  symbolIndex(): SymbolIndex {
+    const symbols = new Map<string, string>();
+    const visit = (declaration: Declaration, prefix: string): void => {
+      const name = `${prefix}${declaration.name}`;
+      const url = this.url(declaration);
+      if (url !== undefined && !symbols.has(name)) symbols.set(name, url);
+      for (const child of [
+        ...(declaration.children ?? []),
+        ...objectMembers(declaration),
+      ]) {
+        visit(child, `${name}.`);
+      }
+    };
+    for (const module of this.project.modules) {
+      for (const child of module.children ?? []) visit(child, "");
+    }
+    return { version: 1, symbols: Object.fromEntries(symbols) };
   }
 
   /**

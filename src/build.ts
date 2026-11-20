@@ -15,6 +15,7 @@ import { dirname, join, resolve } from "node:path";
 import { loadProject, type Config } from "./project.ts";
 import { renderHtml } from "./render/html.ts";
 import { renderMarkdown } from "./render/markdown.ts";
+import { fetchSymbols } from "./symbols.ts";
 
 /**
  * Documents a project and writes the pages.
@@ -27,7 +28,15 @@ export async function build(
   root: string,
   config: Config = {},
 ): Promise<string[]> {
-  const project = loadProject(root, config);
+  const project = loadProject(
+    root,
+    config,
+    config.links &&
+      (await fetchSymbols(
+        config.links,
+        join(root, "node_modules", ".cache", "typeref"),
+      )),
+  );
   const files =
     config.format === "markdown"
       ? renderMarkdown(project, config)

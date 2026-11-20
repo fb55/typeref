@@ -28,7 +28,13 @@ import type {
   Type,
   TypeParameter,
 } from "../model.ts";
-import { objectMembers, Router, topLevel, type Page } from "./router.ts";
+import {
+  indexUrl,
+  objectMembers,
+  Router,
+  topLevel,
+  type Page,
+} from "./router.ts";
 import {
   blockTags,
   inlineMarkdown,
@@ -207,6 +213,8 @@ class HtmlWriter {
       files.set(page.url, this.layout(title, content, page));
     }
     files.set("assets/search.json", JSON.stringify(this.searchIndex()));
+    // For the docs of other packages, to link here.
+    files.set(indexUrl, JSON.stringify(this.router.symbolIndex()));
     for (const asset of ["style.css", "main.js"]) {
       files.set(
         `assets/${asset}`,
