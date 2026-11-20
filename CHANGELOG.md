@@ -8,6 +8,7 @@ The first release.
   sources found through declaration maps.
 - Builds HTML sites with TypeDoc's URLs, or Markdown in typedoc-plugin-markdown's
   layout for static site generators.
+- Documents the published packages of npm workspaces.
 - Loads the pages into Astro content collections (`typeref/astro`).
 - Gives categories of large classes pages of their own (`categoryPages`).
 - Links to the docs of dependencies through the indexes their sites publish
