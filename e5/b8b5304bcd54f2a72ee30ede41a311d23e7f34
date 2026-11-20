@@ -1,0 +1,27 @@
+src/program.ts
+  s_01416be87042f9::t_81e6099f8e33c8 7,143-150
+test/fixtures/untyped-exports/lib/index.d.ts
+  s_01416be87042f9::t_d3b31b67b08252 1
+test/fixtures/untyped-exports/lib/index.js
+  s_01416be87042f9::t_a37bbf647fcdac 1
+test/fixtures/untyped-exports/package.json
+  s_01416be87042f9::t_1616cf0a69caad 1-8
+test/project.test.ts
+  s_01416be87042f9::t_aae6be9d3e753a 32-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e5b8b5304bcd54f2a72ee30ede41a311d23e7f34",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
