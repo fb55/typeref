@@ -1,0 +1,23 @@
+{
+  "name": "pkg",
+  "version": "1.0.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./sub": {
+      "import": {
+        "types": "./lib/sub.d.ts",
+        "default": "./lib/sub.js"
+      }
+    },
+    "./data.json": "./data.json",
+    "./feature.ts": {
+      "types": "./lib/feature.d.ts"
+    },
+    "./runtime": "./lib/run.js",
+    "./style.css": "./lib/style.css",
+    "./*": "./lib/*.js"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "unbuilt",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "aliased",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts"
+    },
+    "./index": {
+      "types": "./lib/index.d.ts"
+    }
+  }
+}

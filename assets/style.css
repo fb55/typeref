@@ -1,0 +1,511 @@
+:root {
+  color-scheme: light dark;
+  --text: light-dark(#1f2328, #e6edf3);
+  --muted: light-dark(#59636e, #9198a1);
+  --background: light-dark(#fff, #0d1117);
+  --surface: light-dark(#f6f8fa, #151b23);
+  --border: light-dark(#d1d9e0, #3d444d);
+  --accent: light-dark(#0969da, #4493f8);
+  --keyword: light-dark(#cf222e, #ff7b72);
+  --name: light-dark(#8250df, #d2a8ff);
+  --literal: light-dark(#0a3069, #a5d6ff);
+  --parameter: light-dark(#953800, #ffa657);
+  --deprecated: light-dark(#9a6700, #d29922);
+  --font: system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --header-height: 3.25rem;
+
+  accent-color: var(--accent);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: 1rem / 1.6 var(--font);
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.15em;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--mono);
+  font-size: 0.875em;
+}
+
+:not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+  background: var(--surface);
+}
+
+/* Long lines wrap: Safari cannot scroll code by keyboard. */
+pre {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  line-height: 1.5;
+}
+
+/* Highlighting, with both themes' colors as custom properties. */
+.shiki,
+.shiki span {
+  color: light-dark(var(--shiki-light), var(--shiki-dark));
+}
+
+.shiki {
+  background: var(--surface);
+}
+
+.signature .k {
+  color: var(--keyword);
+}
+
+.signature .n {
+  color: var(--name);
+}
+
+.signature .l {
+  color: var(--literal);
+}
+
+.signature .p {
+  color: var(--parameter);
+}
+
+.skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+}
+
+.skip:focus {
+  top: 0.5rem;
+  z-index: 2;
+}
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: var(--header-height);
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.project {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.version {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.875em;
+}
+
+.search-button {
+  margin-left: auto;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+kbd {
+  padding: 0 0.3em;
+  border: 1px solid var(--border);
+  border-radius: 0.25em;
+}
+
+.layout {
+  display: grid;
+  grid-template-areas: "main" "toc" "site";
+  gap: 2rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+main {
+  grid-area: main;
+  min-width: 0;
+  /* Long names break rather than widen the page. */
+  overflow-wrap: anywhere;
+}
+
+main:focus {
+  outline: none;
+}
+
+.site {
+  grid-area: site;
+}
+
+.toc {
+  grid-area: toc;
+}
+
+.site,
+.toc {
+  font-size: 0.9rem;
+}
+
+.site h2,
+.toc h2,
+.toc h3 {
+  margin: 1.25rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.site ul,
+.toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site a,
+.toc a {
+  display: block;
+  overflow: hidden;
+  padding: 0.1rem 0.5rem;
+  border-left: 2px solid transparent;
+  color: var(--text);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site a:hover,
+.toc a:hover {
+  color: var(--accent);
+}
+
+.site a[aria-current="page"],
+.toc a[aria-current="true"] {
+  border-left-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The section in view, where browsers track it. */
+@supports (scroll-target-group: auto) {
+  .toc {
+    scroll-target-group: auto;
+  }
+
+  .toc a:target-current {
+    border-left-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+@media (width >= 64rem) {
+  .layout {
+    grid-template-areas: "site main toc";
+    grid-template-columns: 15rem minmax(0, 1fr) 13rem;
+  }
+
+  .site,
+  .toc {
+    position: sticky;
+    top: calc(var(--header-height) + 1.5rem);
+    align-self: start;
+    max-height: calc(100dvh - var(--header-height) - 3rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .site h2:first-child,
+  .toc h2:first-child {
+    margin-top: 0;
+  }
+}
+
+@media (40rem <= width < 64rem) {
+  .layout {
+    grid-template-areas: "site main";
+    grid-template-columns: 13rem minmax(0, 1fr);
+  }
+
+  .toc {
+    display: none;
+  }
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2rem;
+  overflow-wrap: anywhere;
+}
+
+main h2 {
+  margin-top: 2.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-header {
+  margin-bottom: 1rem;
+}
+
+.kind {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.type-parameters {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 0.45em;
+  border: 1px solid var(--border);
+  border-radius: 1em;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  vertical-align: middle;
+}
+
+.source {
+  margin-top: -0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.source a {
+  color: inherit;
+}
+
+.member {
+  margin: 1.5rem 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.member:focus {
+  outline: none;
+}
+
+.member > h3 {
+  margin: 0.5rem 0;
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.anchor:hover {
+  text-decoration: underline;
+}
+
+.deprecated > h3 .anchor,
+dt.deprecated a,
+.site a.deprecated {
+  text-decoration: line-through;
+}
+
+.signature-block + .signature-block {
+  margin-top: 1.5rem;
+}
+
+.tag-title,
+.member h4,
+.member h5 {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+dl.index,
+dl.parameters {
+  display: grid;
+  grid-template-columns: minmax(auto, max-content) 1fr;
+  gap: 0.35rem 1.5rem;
+  margin: 0.5rem 0;
+}
+
+dl.index dt,
+dl.parameters dt {
+  overflow-wrap: anywhere;
+}
+
+dl.index dd,
+dl.parameters dd {
+  margin: 0;
+}
+
+dd > p:first-child {
+  margin-top: 0;
+}
+
+dd > p:last-child {
+  margin-bottom: 0;
+}
+
+@media (width < 40rem) {
+  dl.index,
+  dl.parameters {
+    grid-template-columns: 1fr;
+  }
+
+  dl.index dd,
+  dl.parameters dd {
+    margin: 0 0 0.75rem 1rem;
+  }
+}
+
+ul.types {
+  padding-left: 1.25rem;
+}
+
+.relation {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* Wide tables scroll on their own, so the page reflows. */
+.table {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Layout IDs are capitalized: slugs, being lowercase, never take them. */
+#Search {
+  width: min(40rem, 100vw - 2rem);
+  max-height: min(32rem, 100dvh - 4rem);
+  margin-top: 4rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--background);
+  color: var(--text);
+}
+
+#Search:modal {
+  overscroll-behavior: contain;
+}
+
+#Search::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(0 0 0 / 40%);
+}
+
+#Search input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--muted);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.search-bar {
+  display: flex;
+  justify-content: end;
+  padding: 0.5rem 0.5rem 0;
+}
+
+.search-bar button {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.results {
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+}
+
+.results a {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.results a:is(:hover, :focus-visible),
+.results li:first-child a {
+  background: var(--surface);
+}
+
+/* Qualified names wrap within narrow dialogs. */
+.results a > :first-child {
+  overflow-wrap: anywhere;
+}
+
+.results .result-kind {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.results .result-parent {
+  color: var(--muted);
+}

@@ -1,0 +1,78 @@
+{
+  "name": "typeref",
+  "version": "0.0.0",
+  "description": "API documentation for TypeScript libraries, read from their published declaration files: HTML sites and Markdown for static site generators",
+  "keywords": [
+    "api",
+    "declarations",
+    "documentation",
+    "generator",
+    "jsdoc",
+    "markdown",
+    "tsdoc",
+    "typedoc",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Felix Boehm <me@feedic.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fb55/typeref.git"
+  },
+  "bin": {
+    "typeref": "lib/cli.js"
+  },
+  "files": [
+    "lib",
+    "src",
+    "assets",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "scripts": {
+    "prebuild": "node -e \"require('node:fs').rmSync('lib', { recursive: true, force: true })\"",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "lint": "npm run build && oxlint && oxfmt --check && tsc",
+    "format": "oxfmt"
+  },
+  "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.31",
+    "github-slugger": "^2.0.0",
+    "hast-util-to-html": "^9.0.7",
+    "hastscript": "^9.0.3",
+    "mdast-util-from-markdown": "^2.1.0",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-to-hast": "^13.2.2",
+    "mdast-util-to-markdown": "^2.2.3",
+    "mdast-util-to-string": "^4.0.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "oxc-parser": "^0.159.0",
+    "oxc-resolver": "^11.24.2",
+    "shiki": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.1.1",
+    "oxfmt": "^0.79.0",
+    "oxlint": "^1.94.0",
+    "oxlint-tsgolint": "^7.0.2007",
+    "typescript": "~7.0.2",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

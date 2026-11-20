@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true,
+    "stripInternal": true,
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": ".",
+    "lib": ["es2024", "dom"],
+    "types": [],
+    "jsx": "preserve"
+  },
+  "include": ["*.ts", "*.tsx"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "cjs",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./index.d.cts"
+      }
+    }
+  }
+}
