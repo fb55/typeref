@@ -6,20 +6,23 @@ generator, with the URLs TypeDoc uses, so links to existing docs keep working.
 
 It reads `.d.ts` files rather than sources, so it works with any TypeScript
 version that emits them, TypeScript 7 included. Declaration maps, if the
-package has them, link each declaration to its source.
+package has them, give each declaration's place in its source; pages link
+there if the repository's `origin` remote is on GitHub or GitLab.
 
 ## Usage
 
-Build the package, so its declaration files exist, then run typeref in its
-directory:
+typeref needs Node.js 22.18 or later. Build the package, so its declaration
+files exist, then run typeref in its directory:
 
 ```sh
 npm install --save-dev typeref
 npx tsc && npx typeref
 ```
 
-The site is written to `docs/`. typeref documents every subpath of the
+The site is written to `docs/`. typeref documents every subpath listed in the
 package's `exports` that has types, with the README on the index page.
+Subpaths matched by patterns (`"./features/*"`) are not found by themselves:
+list them in `entryPoints`.
 
 ## Configuration
 
@@ -66,9 +69,9 @@ tagged `@internal`, `@hidden`, `@ignore` or `@private` are not documented.
 
 ## Links to dependencies
 
-Types from dependencies link to their docs if `links` lists them. Sites built
-by typeref publish `symbols.json`, an index of their URLs: builds fetch it, and
-link only to what it lists. The last index fetched is kept in
+Types from dependencies link to their docs if `links` lists them. HTML sites
+built by typeref publish `symbols.json`, an index of their URLs: builds fetch
+it, and link only to what it lists (Markdown builds publish none). The last index fetched is kept in
 `node_modules/.cache/typeref`, for builds without a network. Sites that do not
 publish one, or links given as templates, follow TypeDoc's URLs.
 

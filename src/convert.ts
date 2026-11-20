@@ -5,6 +5,7 @@
  * @module
  */
 import { realpathSync } from "node:fs";
+import { isBuiltin } from "node:module";
 import { dirname, relative, sep } from "node:path";
 
 import type {
@@ -39,6 +40,7 @@ import type {
   TypeParameter,
 } from "./model.ts";
 import {
+  builtinPage,
   declaredNames,
   isConst,
   Program,
@@ -1952,8 +1954,9 @@ class Converter {
       kind === "query"
         ? { type: "query", name: text }
         : { type: "reference", name: text };
-    const target = this.program.importedFile(file, node.source.value);
-    if (target && node.qualifier) {
+    const source = node.source.value;
+    const target = this.program.importedFile(file, source);
+    if (node.qualifier) {
       const names: string[] = [];
       let name: Node = node.qualifier;
       while (name.type === "TSQualifiedName") {
@@ -1961,13 +1964,21 @@ class Converter {
         name = name.left;
       }
       if (name.type === "Identifier") names.unshift(name.name);
-      let symbol: Symbol | undefined = {
+      let symbol: Symbol | undefined = target && {
         kind: "module",
         name: "",
         file: target,
       };
       for (const part of names) {
         symbol &&= this.program.getMember(symbol, part);
+      }
+      // `import("node:stream").Readable`: Node.js's modules have no files.
+      if (!symbol && isBuiltin(source)) {
+        symbol = {
+          kind: "builtin",
+          name: names.at(-1) ?? "",
+          module: builtinPage(source),
+        };
       }
       if (symbol) this.link(reference, symbol);
     }

@@ -845,6 +845,7 @@ describe("Node.js modules", () => {
       parameter.type,
       source.type,
       web.type,
+      query(project, "readable").signatures![0].returns,
     ]).toMatchObject([
       {
         name: "Transform",
@@ -865,6 +866,11 @@ describe("Node.js modules", () => {
       {
         name: "ReadableStream",
         target: { kind: "url", url: "https://nodejs.org/api/webstreams.html" },
+      },
+      // Inline import types.
+      {
+        name: "Readable",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
       },
     ]);
   });

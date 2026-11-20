@@ -8,6 +8,8 @@ export declare class Stream extends Transform {}
 
 export declare function close(handle: FileHandle): void;
 
+export declare function readable(): import("node:stream").Readable;
+
 export declare function pipe(
   source: stream.Readable,
   web: ReadableStream,

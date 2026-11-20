@@ -128,20 +128,16 @@ export function nameOf(node: Node): string {
   return node.type === "Literal" ? String(node.value) : "";
 }
 
-/** Modules of Node.js documented on pages other than their parents'. */
-const builtinPages: Record<string, string> = {
-  "stream/web": "webstreams",
-  "stream/consumers": "webstreams",
-};
-
 /**
  * @param specifier A module of Node.js, such as `node:fs/promises`.
  * @returns Its page in Node.js's docs: `fs`, as Node.js documents
- *   submodules with their parents.
+ *   submodules with their parents, except Web Streams.
  */
-function builtinPage(specifier: string): string {
+export function builtinPage(specifier: string): string {
   const module = specifier.replace(/^node:/u, "");
-  return builtinPages[module] ?? module.split("/")[0];
+  return module === "stream/web" || module === "stream/consumers"
+    ? "webstreams"
+    : module.split("/")[0];
 }
 
 export class Program {
