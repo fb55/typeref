@@ -795,6 +795,13 @@ class Converter {
       const url = globalUrl(symbol.name);
       return url === undefined ? undefined : { kind: "url", url };
     }
+    // Their pages: anchors of classes do not follow one pattern.
+    if (symbol.kind === "builtin") {
+      return {
+        kind: "url",
+        url: `https://nodejs.org/api/${symbol.module}.html`,
+      };
+    }
     if (symbol.kind === "module") {
       const namespace = this.namespaces.get(symbol.file);
       return namespace && { kind: "declaration", id: namespace.id };
@@ -1727,7 +1734,7 @@ class Converter {
    * @param symbol The symbol.
    */
   private link(holder: { target?: Target }, symbol: Symbol): void {
-    if (symbol.kind === "global") {
+    if (symbol.kind === "global" || symbol.kind === "builtin") {
       const target = this.targetOf(symbol, false);
       if (target) holder.target = target;
     } else {

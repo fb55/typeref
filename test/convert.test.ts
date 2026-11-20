@@ -832,3 +832,27 @@ describe("round 64", () => {
     );
   });
 });
+
+describe("Node.js modules", () => {
+  it("links imports from them to their pages, without their members", () => {
+    const project = fixture(["builtins"]);
+    const stream = query(project, "Stream");
+    const [parameter] = query(project, "close").signatures![0].parameters;
+    expect([
+      stream.extends?.[0],
+      stream.children ?? [],
+      parameter.type,
+    ]).toMatchObject([
+      {
+        name: "Transform",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      [],
+      // Their submodules are documented with them.
+      {
+        name: "FileHandle",
+        target: { kind: "url", url: "https://nodejs.org/api/fs.html" },
+      },
+    ]);
+  });
+});

@@ -5,6 +5,7 @@
  * @module
  */
 import { existsSync, readFileSync } from "node:fs";
+import { isBuiltin } from "node:module";
 
 import { parseSync, type Node, type Program as Ast } from "oxc-parser";
 import { ResolverFactory } from "oxc-resolver";
@@ -36,7 +37,9 @@ export type Symbol =
   /** A module, imported or re-exported as a namespace: `import * as x`. */
   | { kind: "module"; name: string; file: SourceFile }
   /** A global, such as `Map`, or a name that is not declared. */
-  | { kind: "global"; name: string };
+  | { kind: "global"; name: string }
+  /** An import from Node.js's modules, such as `node:stream`. */
+  | { kind: "builtin"; name: string; module: string };
 
 /** Imports, re-exports and their targets. */
 interface Binding {
@@ -459,7 +462,16 @@ export class Program {
       }
       const binding = scope.imports.get(name);
       if (binding) {
-        return this.follow(file, binding, name) ?? { kind: "global", name };
+        const symbol = this.follow(file, binding, name);
+        if (symbol) return symbol;
+        return isBuiltin(binding.source)
+          ? {
+              kind: "builtin",
+              name,
+              // Node.js documents `fs/promises` with `fs`.
+              module: binding.source.replace(/^node:/u, "").split("/")[0],
+            }
+          : { kind: "global", name };
       }
     }
     return { kind: "global", name };
