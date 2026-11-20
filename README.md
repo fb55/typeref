@@ -22,8 +22,8 @@ TypeScript type checker.
 - **Keep your TypeDoc links and comments.** HTML pages use TypeDoc's URLs,
   and comments its tags (`@param`, `@returns`, `{@link}`); keep doc comments
   in your emitted `.d.ts` files (no `removeComments`).
-- **Monorepos need no setup.** Run from a private workspace root, typeref
-  documents its workspace packages that are not private.
+- **Monorepos need no setup.** From a private npm workspace root, typeref
+  documents the packages that are not private and have declarations.
 - **Fits static sites.** Markdown for any static site generator, or pages
   loaded straight into [Astro](https://astro.build/) content collections.
 - **Links to your dependencies' docs.** Set a dependency's docs URL once in
