@@ -29,6 +29,14 @@ describe("loadProject", () => {
     ]);
   });
 
+  it("finds declarations next to scripts exported without types", () => {
+    expect(
+      loadProject(join(fixtures, "untyped-exports")).modules[0].children!.map(
+        (child) => child.name,
+      ),
+    ).toStrictEqual(["value"]);
+  });
+
   it("resolves types for require", () => {
     expect(
       loadProject(join(fixtures, "cjs")).modules[0].children!.map(

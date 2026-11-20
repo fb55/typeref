@@ -4,7 +4,7 @@
  *
  * @module
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { parseSync, type Node, type Program as Ast } from "oxc-parser";
 import { ResolverFactory } from "oxc-resolver";
@@ -140,7 +140,14 @@ export class Program {
    * @returns The declaration file's path, or `undefined` if there is none.
    */
   resolve(file: string, specifier: string): string | undefined {
-    return this.resolver.resolveDtsSync(file, specifier).path;
+    const { path } = this.resolver.resolveDtsSync(file, specifier);
+    // Without `types` in `exports`, the declarations are next to the script.
+    const declarations = path?.replace(/\.(?<type>[mc]?)js$/u, ".d.$<type>ts");
+    return declarations !== undefined &&
+      declarations !== path &&
+      existsSync(declarations)
+      ? declarations
+      : path;
   }
 
   /**

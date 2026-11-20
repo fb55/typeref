@@ -1,0 +1,8 @@
+{
+  "name": "untyped",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    }
+  }
+}
