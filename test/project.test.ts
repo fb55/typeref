@@ -59,7 +59,16 @@ describe("loadProject", () => {
     const project = loadProject(
       join(fixtures, "linked"),
       { links: { dep: "https://dep.example/" } },
-      new Map([["dep", new Map([["Tools.Tool", "https://dep.example/t"]])]]),
+      new Map([
+        [
+          "dep",
+          new Map([
+            ["Tools.Tool", "https://dep.example/t"],
+            ["parse", "https://dep.example/parse"],
+            ["Parser.parse", "https://dep.example/p"],
+          ]),
+        ],
+      ]),
     );
     const [signature] = project.modules[0].children!.find(
       (child) => child.name === "use",
@@ -67,9 +76,16 @@ describe("loadProject", () => {
     // What the index does not list is not linked.
     expect(
       signature.parameters.map((parameter) =>
-        parameter.type?.type === "reference" ? parameter.type.target : null,
+        parameter.type?.type === "reference" || parameter.type?.type === "query"
+          ? parameter.type.target
+          : null,
       ),
-    ).toStrictEqual([{ kind: "url", url: "https://dep.example/t" }, undefined]);
+    ).toStrictEqual([
+      { kind: "url", url: "https://dep.example/t" },
+      undefined,
+      // Static members by their classes' names.
+      { kind: "url", url: "https://dep.example/p" },
+    ]);
   });
 
   it("places declarations whose sources are not on disk in their files", () => {

@@ -46,8 +46,8 @@ function parseIndex(text: string, base: string): Symbols | undefined {
 
 /**
  * Fetches the indexes of the dependencies' docs. Links given as templates
- * have none. If a site cannot be reached, the index fetched from it last is
- * used.
+ * have none, and sites answering 404 do not publish one. If a site cannot be
+ * reached, the index fetched from it last is used.
  *
  * @param links Links to the docs of dependencies, by package name.
  * @param cache The directory keeping the last indexes fetched.
@@ -64,31 +64,36 @@ export async function fetchSymbols(
       const url = new URL(indexUrl, base.replace(/\/?$/u, "/")).href;
       const file = join(cache, `${encodeURIComponent(name)}.json`);
       let text: string;
+      let source: string;
       try {
         const response = await fetch(url, {
           signal: AbortSignal.timeout(10_000),
         });
         // Sites that typeref did not build link by their URLs' pattern.
-        if (!response.ok) {
+        if (response.status === 404) {
           rmSync(file, { force: true });
           return;
         }
+        if (!response.ok) throw new Error(response.statusText);
         text = await response.text();
+        // Its URLs are relative to where it was found, after redirects.
+        source = response.url;
         mkdirSync(cache, { recursive: true });
-        writeFileSync(file, JSON.stringify({ url, text }));
+        writeFileSync(file, JSON.stringify({ url, source, text }));
       } catch {
         try {
           const cached = JSON.parse(readFileSync(file, "utf8")) as {
             url: string;
+            source: string;
             text: string;
           };
           if (cached.url !== url) return;
-          ({ text } = cached);
+          ({ source, text } = cached);
         } catch {
           return;
         }
       }
-      const symbols = parseIndex(text, url);
+      const symbols = parseIndex(text, source);
       if (symbols) found.set(name, symbols);
     }),
   );

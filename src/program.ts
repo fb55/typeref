@@ -30,6 +30,8 @@ export type Symbol =
       nodes: Node[];
       /** The namespaces the declarations are in, outermost first. */
       containers: Node[];
+      /** Static and enum members: their class or enum. */
+      owner?: Node;
     }
   /** A module, imported or re-exported as a namespace: `import * as x`. */
   | { kind: "module"; name: string; file: SourceFile }
@@ -478,6 +480,7 @@ export class Program {
             file: symbol.file,
             nodes: [member],
             containers: symbol.containers,
+            owner: node,
           };
         }
       } else if (node.type === "ClassDeclaration") {
@@ -496,6 +499,7 @@ export class Program {
             file: symbol.file,
             nodes,
             containers: symbol.containers,
+            owner: node,
           };
         }
       }

@@ -823,11 +823,11 @@ class Converter {
     if (packageName === undefined) return undefined;
     const index = this.options.symbols?.get(packageName);
     if (index) {
-      // Members of namespaces by their qualified names.
+      // Members of namespaces, classes and enums by their qualified names.
       const name = [
-        ...symbol.containers.flatMap((container) =>
-          declaredNames(container).map(([part]) => part),
-        ),
+        ...[...symbol.containers, ...(symbol.owner ? [symbol.owner] : [])]
+          .flatMap((container) => declaredNames(container))
+          .map(([part]) => part),
         symbol.name,
       ].join(".");
       const url = index.get(name);

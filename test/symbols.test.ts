@@ -8,9 +8,14 @@ import { describe, expect, it } from "vitest";
 import { fetchSymbols } from "../src/symbols.ts";
 
 describe("fetchSymbols", () => {
-  it("fetches indexes, and uses the last one fetched when offline", async () => {
+  it("fetches indexes, and uses the last one fetched when they fail", async () => {
+    let isFailing = false;
     const server = createServer((request, response) => {
       if (request.url === "/docs/symbols.json") {
+        response.statusCode = isFailing ? 503 : 301;
+        response.setHeader("location", "/api/symbols.json");
+        response.end();
+      } else if (request.url === "/api/symbols.json") {
         response.end(
           JSON.stringify({
             version: 1,
@@ -32,17 +37,19 @@ describe("fetchSymbols", () => {
     };
     const cache = mkdtempSync(join(tmpdir(), "typeref-"));
     const online = await fetchSymbols(links, cache);
+    isFailing = true;
+    const failed = await fetchSymbols(links, cache);
     await new Promise((resolve) => {
       server.close(resolve);
     });
-    const offline = await fetchSymbols(links, cache);
     rmSync(cache, { recursive: true });
+    // URLs are relative to where the index was redirected to.
     const expected = new Map([
       [
         "typeref",
-        new Map([["Node", `http://127.0.0.1:${port}/docs/classes/Node.html`]]),
+        new Map([["Node", `http://127.0.0.1:${port}/api/classes/Node.html`]]),
       ],
     ]);
-    expect([online, offline]).toStrictEqual([expected, expected]);
+    expect([online, failed]).toStrictEqual([expected, expected]);
   });
 });
