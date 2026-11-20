@@ -1,9 +1,11 @@
 {
   "name": "typeref",
   "version": "0.1.0",
-  "description": "API documentation for TypeScript libraries, read from their published declaration files: HTML sites and Markdown for static site generators",
+  "description": "Fast API docs for TypeScript libraries, built from their declaration files. A TypeDoc replacement that works with TypeScript 7, with Markdown and Astro output.",
   "keywords": [
     "api",
+    "api-docs",
+    "astro",
     "declarations",
     "documentation",
     "generator",
