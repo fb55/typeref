@@ -1956,32 +1956,30 @@ class Converter {
         : { type: "reference", name: text };
     const source = node.source.value;
     const target = this.program.importedFile(file, source);
-    if (node.qualifier) {
-      const names: string[] = [];
-      let name: Node = node.qualifier;
-      while (name.type === "TSQualifiedName") {
-        names.unshift(name.right.name);
-        name = name.left;
-      }
-      if (name.type === "Identifier") names.unshift(name.name);
-      let symbol: Symbol | undefined = target && {
-        kind: "module",
-        name: "",
-        file: target,
-      };
-      for (const part of names) {
-        symbol &&= this.program.getMember(symbol, part);
-      }
-      // `import("node:stream").Readable`: Node.js's modules have no files.
-      if (!symbol && isBuiltin(source)) {
-        symbol = {
-          kind: "builtin",
-          name: names.at(-1) ?? "",
-          module: builtinPage(source),
-        };
-      }
-      if (symbol) this.link(reference, symbol);
+    const names: string[] = [];
+    let name: Node | null = node.qualifier;
+    while (name?.type === "TSQualifiedName") {
+      names.unshift(name.right.name);
+      name = name.left;
     }
+    if (name?.type === "Identifier") names.unshift(name.name);
+    // Modules themselves (`typeof import("./a")`) are not linked.
+    let symbol: Symbol | undefined =
+      target && names.length > 0
+        ? { kind: "module", name: "", file: target }
+        : undefined;
+    for (const part of names) {
+      symbol &&= this.program.getMember(symbol, part);
+    }
+    // `import("node:stream").Readable`: Node.js's modules have no files.
+    if (!symbol && isBuiltin(source)) {
+      symbol = {
+        kind: "builtin",
+        name: names.at(-1) ?? source,
+        module: builtinPage(source),
+      };
+    }
+    if (symbol) this.link(reference, symbol);
     if (node.typeArguments) {
       reference.typeArguments = node.typeArguments.params.map((type) =>
         this.type(file, type),
@@ -2388,6 +2386,8 @@ class Converter {
         const target = this.targetOf(symbol, false);
         if (target) return target;
       }
+      // Members of Node.js's modules (`stream.Readable`) are on their pages.
+      if (symbol.kind === "builtin") return this.targetOf(symbol, false);
       // Members of namespace imports (`api.Parser#parse`), as types link
       // them, up to a documented declaration whose members are looked up.
       if (symbol.kind === "module" && rest.length > 0) {

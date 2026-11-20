@@ -10,6 +10,9 @@ export declare function close(handle: FileHandle): void;
 
 export declare function readable(): import("node:stream").Readable;
 
+/** The module of {@link stream.Readable}. */
+export declare function streams(): typeof import("node:stream");
+
 export declare function pipe(
   source: stream.Readable,
   web: ReadableStream,

@@ -839,6 +839,7 @@ describe("Node.js modules", () => {
     const stream = query(project, "Stream");
     const [parameter] = query(project, "close").signatures![0].parameters;
     const [source, web] = query(project, "pipe").signatures![0].parameters;
+    const [streams] = query(project, "streams").signatures!;
     expect([
       stream.extends?.[0],
       stream.children ?? [],
@@ -846,6 +847,8 @@ describe("Node.js modules", () => {
       source.type,
       web.type,
       query(project, "readable").signatures![0].returns,
+      streams.returns,
+      streams.comment?.summary[1],
     ]).toMatchObject([
       {
         name: "Transform",
@@ -867,9 +870,18 @@ describe("Node.js modules", () => {
         name: "ReadableStream",
         target: { kind: "url", url: "https://nodejs.org/api/webstreams.html" },
       },
-      // Inline import types.
+      // Inline import types, of members and of modules.
       {
         name: "Readable",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      {
+        type: "query",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      // Links in comments.
+      {
+        text: "stream.Readable",
         target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
       },
     ]);
