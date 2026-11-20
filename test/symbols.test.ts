@@ -8,26 +8,28 @@ import { describe, expect, it } from "vitest";
 import { fetchSymbols } from "../src/symbols.ts";
 
 describe("fetchSymbols", () => {
-  it("fetches indexes, and uses the last one fetched when they fail", async () => {
-    let state: "ok" | "unavailable" | "page" = "ok";
+  it("fetches indexes, and uses the last valid one when they fail", async () => {
+    let state: "ok" | "unavailable" | "page" | "unsafe" | "gone" = "ok";
     const server = createServer((request, response) => {
-      if (request.url === "/docs/symbols.json") {
-        if (state === "page") {
-          response.end("<!doctype html><title>Maintenance</title>");
-          return;
-        }
-        response.statusCode = state === "unavailable" ? 503 : 301;
-        response.setHeader("location", "/api/symbols.json");
-        response.end();
-      } else if (request.url === "/api/symbols.json") {
+      if (request.url === "/api/symbols.json") {
         response.end(
           JSON.stringify({
             version: 1,
             symbols: { Node: "classes/Node.html" },
           }),
         );
-      } else {
+      } else if (request.url !== "/docs/symbols.json") {
         response.statusCode = 404;
+        response.end();
+      } else if (state === "page") {
+        response.end("<!doctype html><title>Maintenance</title>");
+      } else if (state === "unsafe") {
+        response.end(
+          JSON.stringify({ version: 1, symbols: { Node: "data:text/html,0" } }),
+        );
+      } else {
+        response.statusCode = { ok: 301, unavailable: 503, gone: 404 }[state];
+        response.setHeader("location", "/api/symbols.json");
         response.end();
       }
     });
@@ -40,14 +42,18 @@ describe("fetchSymbols", () => {
       other: `http://127.0.0.1:${port}/other/`,
     };
     const cache = mkdtempSync(join(tmpdir(), "typeref-"));
-    const online = await fetchSymbols(links, cache);
-    state = "unavailable";
-    const unavailable = await fetchSymbols(links, cache);
-    // Error pages served as successes do not replace the last index.
-    state = "page";
-    await fetchSymbols(links, cache);
-    state = "unavailable";
-    const afterPage = await fetchSymbols(links, cache);
+    const results = [];
+    for (const next of [
+      "ok",
+      "unavailable",
+      "page",
+      "unsafe",
+      "gone",
+      "unavailable",
+    ] as const) {
+      state = next;
+      results.push(await fetchSymbols(links, cache));
+    }
     await new Promise((resolve) => {
       server.close(resolve);
     });
@@ -59,10 +65,14 @@ describe("fetchSymbols", () => {
         new Map([["Node", `http://127.0.0.1:${port}/api/classes/Node.html`]]),
       ],
     ]);
-    expect([online, unavailable, afterPage]).toStrictEqual([
+    // Only a 404 drops it: the site no longer publishes one.
+    expect(results).toStrictEqual([
       expected,
       expected,
       expected,
+      expected,
+      new Map(),
+      new Map(),
     ]);
   });
 });

@@ -26,17 +26,31 @@ export type Symbols = Map<string, string>;
 /**
  * @param text An index, as JSON.
  * @param base The index's URL.
- * @returns Its symbols' URLs, or nothing if it is not an index.
+ * @returns Its symbols' URLs, or nothing if it is not a valid index.
  */
 function parseIndex(text: string, base: string): Symbols | undefined {
   try {
-    const index = JSON.parse(text) as Partial<SymbolIndex> | null;
-    if (index?.version !== 1 || typeof index.symbols !== "object") {
+    const index = JSON.parse(text) as {
+      version?: unknown;
+      symbols?: unknown;
+    } | null;
+    if (
+      index?.version !== 1 ||
+      typeof index.symbols !== "object" ||
+      index.symbols === null ||
+      Array.isArray(index.symbols)
+    ) {
       return undefined;
     }
     const symbols: Symbols = new Map();
     for (const [name, url] of Object.entries(index.symbols)) {
-      if (typeof url === "string") symbols.set(name, new URL(url, base).href);
+      if (typeof url !== "string") return undefined;
+      const resolved = new URL(url, base);
+      // Links go to pages; others (`javascript:`) would run on this site.
+      if (resolved.protocol !== "https:" && resolved.protocol !== "http:") {
+        return undefined;
+      }
+      symbols.set(name, resolved.href);
     }
     return symbols;
   } catch {
