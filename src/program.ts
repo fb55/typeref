@@ -128,6 +128,22 @@ export function nameOf(node: Node): string {
   return node.type === "Literal" ? String(node.value) : "";
 }
 
+/** Modules of Node.js documented on pages other than their parents'. */
+const builtinPages: Record<string, string> = {
+  "stream/web": "webstreams",
+  "stream/consumers": "webstreams",
+};
+
+/**
+ * @param specifier A module of Node.js, such as `node:fs/promises`.
+ * @returns Its page in Node.js's docs: `fs`, as Node.js documents
+ *   submodules with their parents.
+ */
+function builtinPage(specifier: string): string {
+  const module = specifier.replace(/^node:/u, "");
+  return builtinPages[module] ?? module.split("/")[0];
+}
+
 export class Program {
   private readonly files = new Map<string, SourceFile>();
   private readonly scopes = new Map<Node | SourceFile, Scope>();
@@ -465,12 +481,7 @@ export class Program {
         const symbol = this.follow(file, binding, name);
         if (symbol) return symbol;
         return isBuiltin(binding.source)
-          ? {
-              kind: "builtin",
-              name,
-              // Node.js documents `fs/promises` with `fs`.
-              module: binding.source.replace(/^node:/u, "").split("/")[0],
-            }
+          ? { kind: "builtin", name, module: builtinPage(binding.source) }
           : { kind: "global", name };
       }
     }
@@ -486,6 +497,8 @@ export class Program {
    */
   getMember(symbol: Symbol, name: string): Symbol | undefined {
     if (symbol.kind === "module") return this.getExport(symbol.file, name);
+    // `stream.Transform`, of `import * as stream from "node:stream"`.
+    if (symbol.kind === "builtin") return { ...symbol, name };
     if (symbol.kind !== "declaration") return undefined;
     for (const node of symbol.nodes) {
       if (node.type === "TSModuleDeclaration") {

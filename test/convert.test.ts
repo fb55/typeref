@@ -838,10 +838,13 @@ describe("Node.js modules", () => {
     const project = fixture(["builtins"]);
     const stream = query(project, "Stream");
     const [parameter] = query(project, "close").signatures![0].parameters;
+    const [source, web] = query(project, "pipe").signatures![0].parameters;
     expect([
       stream.extends?.[0],
       stream.children ?? [],
       parameter.type,
+      source.type,
+      web.type,
     ]).toMatchObject([
       {
         name: "Transform",
@@ -852,6 +855,16 @@ describe("Node.js modules", () => {
       {
         name: "FileHandle",
         target: { kind: "url", url: "https://nodejs.org/api/fs.html" },
+      },
+      // Members of namespace imports.
+      {
+        name: "stream.Readable",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      // Documented on a page of their own.
+      {
+        name: "ReadableStream",
+        target: { kind: "url", url: "https://nodejs.org/api/webstreams.html" },
       },
     ]);
   });
