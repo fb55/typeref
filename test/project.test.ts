@@ -134,6 +134,7 @@ describe("loadProject", () => {
     ).toStrictEqual(["other"]);
   });
 
+  // Not private ones, ones without types, or ones excluded with `!`.
   it("documents the published packages of npm workspaces", () => {
     expect(
       loadProject(join(fixtures, "workspaces")).modules.map(

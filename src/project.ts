@@ -71,7 +71,7 @@ export const defineConfig = (config: Config): Config => config;
 interface PackageJson {
   name?: string;
   version?: string;
-  private?: unknown;
+  private?: boolean | string;
   exports?: unknown;
   /** As npm and Yarn write them: an array, or Yarn's `{ packages }`. */
   workspaces?: string[] | { packages?: string[] };
@@ -156,12 +156,15 @@ function subpaths(exports: unknown): string[] {
  * @param directory The package's directory.
  * @param program The program to resolve modules with.
  * @param requested The entry points to document, if not all.
+ * @param isOptional Whether a package may have none, as workspaces found
+ *   by themselves may.
  * @returns The entry points.
  */
 function entryPoints(
   directory: string,
   program: Program,
   requested: string[] | undefined,
+  isOptional: boolean,
 ): EntryPoint[] {
   const json = readPackage(directory);
   const packageName = json.name ?? "";
@@ -210,7 +213,7 @@ function entryPoints(
       },
     ];
   });
-  if (points.length === 0) {
+  if (points.length === 0 && !isOptional) {
     throw new Error(
       `No declarations for ${packageName || directory}. Build the package first.`,
     );
@@ -241,25 +244,38 @@ export function loadProject(
       : json.workspaces?.packages
     : undefined;
   const patterns = config.packages ?? workspaces;
+  const isDiscovered =
+    config.packages === undefined && workspaces !== undefined;
   const directories = patterns
-    ? patterns
-        .flatMap((pattern) => globSync(pattern, { cwd: root }))
+    ? globSync(
+        patterns.filter((pattern) => !pattern.startsWith("!")),
+        {
+          cwd: root,
+          exclude: patterns
+            .filter((pattern) => pattern.startsWith("!"))
+            .map((pattern) => pattern.slice(1)),
+        },
+      )
         .map((directory) => resolve(root, directory))
         .filter(
           (directory) =>
             existsSync(join(directory, "package.json")) &&
             // Of workspaces, those published: not tests or benchmarks.
-            (config.packages !== undefined ||
-              !isPrivate(readPackage(directory))),
+            (!isDiscovered || !isPrivate(readPackage(directory))),
         )
         .toSorted()
     : [root];
   const entries = directories.flatMap((directory) =>
-    entryPoints(directory, program, config.entryPoints).map((point) => ({
-      point,
-      directory,
-    })),
+    // Of workspaces, those with types: not scripts, such as CLIs.
+    entryPoints(directory, program, config.entryPoints, isDiscovered).map(
+      (point) => ({ point, directory }),
+    ),
   );
+  if (entries.length === 0) {
+    throw new Error(
+      `No declarations in the workspaces of ${root}. Build the packages first.`,
+    );
+  }
   const project = convert({
     name: config.name ?? json.name ?? "",
     ...(json.version !== undefined && { version: json.version }),

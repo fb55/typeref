@@ -1,0 +1,4 @@
+{
+  "name": "cli",
+  "bin": "index.js"
+}
