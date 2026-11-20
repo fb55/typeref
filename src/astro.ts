@@ -41,7 +41,7 @@ export interface TyperefLoaderOptions extends Omit<
 
 /** The data of each entry. */
 export interface TyperefEntryData extends Record<string, unknown> {
-  /** The page's title, as its first heading has it. */
+  /** The page's title: its first heading, or else the name. */
   title: string;
   /**
    * What the page documents: the README, the index of the project's
@@ -156,12 +156,16 @@ export function typerefLoader(options: TyperefLoaderOptions): TyperefLoader {
         for (const { page, markdown } of pages) {
           const id = idOf(page.url);
           stale.delete(id);
-          const [heading = ""] = markdown.split("\n", 1);
+          const described = describe(page, project.name);
+          // READMEs may start with a logo, before their headings.
+          const heading = fromMarkdown(markdown).children.find(
+            (node) => node.type === "heading",
+          );
           const data = await context.parseData({
             id,
             data: {
-              title: toString(fromMarkdown(heading)),
-              ...describe(page, project.name),
+              title: heading ? toString(heading) : described.name,
+              ...described,
               href: hrefOf(id),
             },
           });
