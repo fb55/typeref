@@ -6,7 +6,7 @@
  * @module
  */
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { indexUrl } from "./render/router.ts";
 
@@ -58,10 +58,69 @@ function parseIndex(text: string, base: string): Symbols | undefined {
   }
 }
 
+interface Download {
+  /** The index's URL. */
+  url: string;
+  /** Where it was found, after redirects; its URLs are relative to it. */
+  source: string;
+  text: string;
+}
+
+/**
+ * @param url An index's URL.
+ * @returns The index; `null` if the site has none, nothing if it could not
+ *   be fetched.
+ */
+async function download(url: string): Promise<Download | null | undefined> {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (response.status === 404) return null;
+    if (!response.ok) return undefined;
+    return { url, source: response.url, text: await response.text() };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * @param file A file in the cache.
+ * @param url The index's URL.
+ * @returns The index last fetched from it, if any.
+ */
+function recall(file: string, url: string): Symbols | undefined {
+  try {
+    const cached = JSON.parse(readFileSync(file, "utf8")) as Download;
+    return cached.url === url
+      ? parseIndex(cached.text, cached.source)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Changes the cache if it can; builds work without it.
+ *
+ * @param file A file in the cache.
+ * @param index The index to keep, or nothing to forget the last one.
+ */
+function remember(file: string, index: Download | undefined): void {
+  try {
+    if (index) {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify(index));
+    } else {
+      rmSync(file, { force: true });
+    }
+  } catch {
+    // A read-only cache keeps what it has.
+  }
+}
+
 /**
  * Fetches the indexes of the dependencies' docs. Links given as templates
- * have none, and sites answering 404 do not publish one. If a site cannot be
- * reached, the index fetched from it last is used.
+ * have none, and sites answering 404 do not publish one. If an index cannot
+ * be fetched, or is not valid, the one fetched last is used.
  *
  * @param links Links to the docs of dependencies, by package name.
  * @param cache The directory keeping the last indexes fetched.
@@ -77,39 +136,16 @@ export async function fetchSymbols(
       if (!/^https?:\/\//u.test(base) || base.includes("{")) return;
       const url = new URL(indexUrl, base.replace(/\/?$/u, "/")).href;
       const file = join(cache, `${encodeURIComponent(name)}.json`);
-      let symbols: Symbols | undefined;
-      try {
-        const response = await fetch(url, {
-          signal: AbortSignal.timeout(10_000),
-        });
-        // Sites that typeref did not build link by their URLs' pattern.
-        if (response.status === 404) {
-          rmSync(file, { force: true });
-          return;
-        }
-        if (!response.ok) throw new Error(response.statusText);
-        const text = await response.text();
-        // Its URLs are relative to where it was found, after redirects.
-        const source = response.url;
-        symbols = parseIndex(text, source);
-        // Not an index, such as a host's error page: the last one is kept.
-        if (!symbols) throw new Error(`${url} is not an index`);
-        mkdirSync(cache, { recursive: true });
-        writeFileSync(file, JSON.stringify({ url, source, text }));
-      } catch {
-        try {
-          const cached = JSON.parse(readFileSync(file, "utf8")) as {
-            url: string;
-            source: string;
-            text: string;
-          };
-          if (cached.url === url) {
-            symbols = parseIndex(cached.text, cached.source);
-          }
-        } catch {
-          // Nothing fetched before.
-        }
+      const index = await download(url);
+      // Sites that typeref did not build link by their URLs' pattern.
+      if (index === null) {
+        remember(file, undefined);
+        return;
       }
+      // Not an index, such as a host's error page: the last one is kept.
+      const fetched = index ? parseIndex(index.text, index.source) : undefined;
+      if (fetched) remember(file, index);
+      const symbols = fetched ?? recall(file, url);
       if (symbols) found.set(name, symbols);
     }),
   );
