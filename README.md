@@ -27,7 +27,7 @@ TypeScript type checker.
 - **Fits static sites.** Markdown for any static site generator, or pages
   loaded straight into [Astro](https://astro.build/) content collections.
 - **Links to your dependencies' docs.** Set a dependency's docs URL once in
-  `links`; for sites built by typeref, their `symbols.json` supplies each
+  `links`; for HTML sites built by typeref, their `symbols.json` supplies each
   page's URL.
 - **Optionally splits large classes** into a page per `@category`.
 
@@ -65,7 +65,7 @@ Options go under a `typeref` key in `package.json`, or in `typeref.config.ts`
 | -------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `entryPoints`              | auto-discovered exports | Subpaths of `exports` (`"."`, `"./decode"`), or paths of declaration files.                                             |
 | `packages`                 | –                       | For monorepos: globs of the packages' directories (`["packages/*"]`).                                                   |
-| `out`                      | `docs`                  | The output directory. Files typeref did not write there are never replaced.                                             |
+| `out`                      | `docs`                  | The output directory. The build stops if a file it would write there came from another tool, such as TypeDoc.           |
 | `format`                   | `html`                  | `html` for a site, `markdown` for a static site generator.                                                              |
 | `name`                     | the package's name      | The project's name.                                                                                                     |
 | `readme`                   | `README.md`             | The README for the index page, or `false` for none.                                                                     |
