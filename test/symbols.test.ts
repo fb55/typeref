@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -48,10 +48,20 @@ describe("fetchSymbols", () => {
     }
     // A read-only cache neither replaces new indexes nor outlives a 404.
     page = "Node2.html";
+    const cached = join(cache, "typeref.json");
+    chmodSync(cached, 0o444);
     chmodSync(cache, 0o555);
     results.push(await fetchIn("ok"), await fetchIn("gone"));
     chmodSync(cache, 0o755);
-    results.push(await fetchIn("gone"), await fetchIn("unavailable"));
+    chmodSync(cached, 0o644);
+    // Nor does one that cannot be created.
+    writeFileSync(join(cache, "file"), "");
+    state = "ok";
+    results.push(
+      await fetchSymbols(links, join(cache, "file", "cache")),
+      await fetchIn("gone"),
+      await fetchIn("unavailable"),
+    );
     await new Promise((resolve) => {
       server.close(resolve);
     });
@@ -72,6 +82,7 @@ describe("fetchSymbols", () => {
       index("Node.html"),
       index("Node2.html"),
       new Map(),
+      index("Node2.html"),
       new Map(),
       new Map(),
     ]);
