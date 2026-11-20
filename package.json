@@ -21,6 +21,7 @@
     "type": "git",
     "url": "git+https://github.com/fb55/typeref.git"
   },
+  "funding": "https://github.com/fb55/typeref?sponsor=1",
   "bin": {
     "typeref": "lib/cli.js"
   },
