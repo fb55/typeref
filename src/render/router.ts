@@ -189,12 +189,12 @@ export class Router {
       const base = page.slice(0, -this.extension.length);
       const categories = sections(children, declaration.comment).map(
         (section): Page => {
-          // Sites serve `index` pages as their directories' (the declaration's).
-          const name = toSlug(section.title);
+          // Sites skip files starting with `_`, and serve `index` pages as
+          // their directories' (the declaration's).
+          const slug = toSlug(section.title).replace(/^_+/u, "");
+          const name = slug === "index" ? "index-category" : slug || "category";
           return {
-            url: this.fileName(
-              `${base}/${name === "" || name === "index" ? `_${name}` : name}`,
-            ),
+            url: this.fileName(`${base}/${name}`),
             declaration,
             kind: "category",
             section,

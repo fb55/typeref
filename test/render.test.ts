@@ -133,7 +133,7 @@ describe("renderMarkdown of special cases", () => {
         "interfaces/Multi/a.md",
         "interfaces/Multi/b.md",
         // Not `index.md`, which sites serve as the directory's page.
-        "interfaces/Multi/_index.md",
+        "interfaces/Multi/index-category.md",
         "interfaces/Multi/other.md",
       ],
       expect.stringContaining(
@@ -282,7 +282,9 @@ describe("renderHtml", () => {
       page,
       // Its navigation lists only the members on it, if any.
       /<nav class="toc".*?<\/nav>/u.exec(page)?.[0].match(/<li>/gu)?.length,
-      files.get("interfaces/Multi/_index.html")!.includes('class="toc"'),
+      files
+        .get("interfaces/Multi/index-category.html")!
+        .includes('class="toc"'),
       index,
       // Old links to members find them in the index, once.
       index.match(/id="both"/gu)?.length,
