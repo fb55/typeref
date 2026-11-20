@@ -1,14 +1,14 @@
 {
   "name": "typeref",
   "version": "0.1.0",
-  "description": "Fast API docs for TypeScript libraries, built from their declaration files. A TypeDoc replacement that works with TypeScript 7, with Markdown and Astro output.",
+  "description": "TypeDoc alternative for TypeScript 7. Generate HTML or Markdown API docs from declaration files, or load them into Astro content collections.",
   "keywords": [
     "api",
     "api-docs",
     "astro",
     "declarations",
     "documentation",
-    "generator",
+    "documentation-generator",
     "jsdoc",
     "markdown",
     "tsdoc",
