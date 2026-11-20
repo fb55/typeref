@@ -144,6 +144,13 @@ export class Program {
   }
 
   /**
+   * @returns The absolute paths of the declaration files read.
+   */
+  paths(): string[] {
+    return [...this.files.keys()];
+  }
+
+  /**
    * @param path The absolute path of a declaration file.
    * @returns The file, parsed.
    */

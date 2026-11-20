@@ -28,7 +28,7 @@ import type {
   Target,
   Type,
 } from "../model.ts";
-import { Router, topLevel } from "./router.ts";
+import { Router, topLevel, type Page } from "./router.ts";
 import {
   blockTags,
   commentOf,
@@ -47,6 +47,11 @@ import { plain, tokens, type Token, type TypePrinter } from "./types.ts";
 export interface MarkdownOptions {
   /** The path the pages are served under; links are relative without it. */
   basePath?: string;
+  /**
+   * Where pages are served, by their paths (`classes/Cheerio.md`), for
+   * sites that serve them elsewhere; overrides `basePath`.
+   */
+  urlOf?: (path: string) => string;
   /**
    * Classes, interfaces and enums with at least this many members get a page
    * for each category of their members.
@@ -202,6 +207,7 @@ function pageTitle(declaration: Declaration): Heading {
 class MarkdownWriter {
   private readonly router: Router;
   private readonly basePath: string | undefined;
+  private readonly urlOf: ((path: string) => string) | undefined;
   private page = "";
   /** The members documented on the current page. */
   private readonly rendered = new Set<Declaration>();
@@ -210,10 +216,11 @@ class MarkdownWriter {
     this.router = new Router(project, ".md", options);
     // Pages' paths follow the base path's slash, given or not.
     this.basePath = options.basePath?.replace(/\/?$/u, "/");
+    this.urlOf = options.urlOf;
   }
 
-  render(project: Project): Map<string, string> {
-    const files = new Map<string, string>();
+  render(project: Project): MarkdownPage[] {
+    const files: MarkdownPage[] = [];
     for (const page of this.router.pages) {
       this.page = page.url;
       this.rendered.clear();
@@ -233,15 +240,21 @@ class MarkdownWriter {
               syntax,
             );
       // READMEs are written as they are; leading spaces start code there.
-      files.set(
-        page.url,
-        page.kind === "readme" ? markdown : `${markdown.trim()}\n`,
-      );
+      files.push({
+        page,
+        markdown: page.kind === "readme" ? markdown : `${markdown.trim()}\n`,
+      });
     }
     return files;
   }
 
   private url(to: string): string {
+    if (this.urlOf) {
+      const hash = to.indexOf("#");
+      return hash === -1
+        ? this.urlOf(to)
+        : `${this.urlOf(to.slice(0, hash))}${to.slice(hash)}`;
+    }
     return this.basePath === undefined
       ? Router.relative(this.page, to)
       : `${this.basePath}${to}`;
@@ -818,5 +831,31 @@ export function renderMarkdown(
   project: Project,
   options: MarkdownOptions = {},
 ): Map<string, string> {
+  return new Map(
+    renderMarkdownPages(project, options).map(({ page, markdown }) => [
+      page.url,
+      markdown,
+    ]),
+  );
+}
+
+export interface MarkdownPage {
+  /** The page: its path, and what it documents. */
+  page: Page;
+  markdown: string;
+}
+
+/**
+ * Renders a project as Markdown, for tools that need to know what each page
+ * documents.
+ *
+ * @param project The project.
+ * @param options How to render it.
+ * @returns The pages, in order.
+ */
+export function renderMarkdownPages(
+  project: Project,
+  options: MarkdownOptions = {},
+): MarkdownPage[] {
   return new MarkdownWriter(project, options).render(project);
 }

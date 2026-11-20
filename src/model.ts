@@ -235,4 +235,6 @@ export interface Project {
    * in a module without a page of its own.
    */
   modules: Module[];
+  /** The declaration files read, as absolute paths: to rebuild on changes. */
+  files?: string[];
 }

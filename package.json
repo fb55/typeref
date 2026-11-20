@@ -36,6 +36,10 @@
     ".": {
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
+    },
+    "./astro": {
+      "types": "./lib/astro.d.ts",
+      "default": "./lib/astro.js"
     }
   },
   "scripts": {

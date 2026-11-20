@@ -620,7 +620,11 @@ class Converter {
       if (declaration.kind !== "Enum") declaration.children?.sort(compare);
     }
     relativizeSources(this.modules);
-    const project: Project = { name: this.options.name, modules: this.modules };
+    const project: Project = {
+      name: this.options.name,
+      modules: this.modules,
+      files: this.program.paths(),
+    };
     if (this.options.version !== undefined && this.options.version !== "") {
       project.version = this.options.version;
     }
