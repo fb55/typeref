@@ -1,0 +1,31 @@
+src/project.ts
+  s_01416be87042f9::t_6fea264c84dbbf 74,159-160,167,216,247-248,250-258,264,269-272,274-278
+test/fixtures/workspaces/package.json
+  s_01416be87042f9::t_4c473ffd18d98b 5-6
+test/fixtures/workspaces/packages/cli/index.js
+  s_01416be87042f9::t_f66a9987860c6a 1
+test/fixtures/workspaces/packages/cli/package.json
+  s_01416be87042f9::t_b5b4df62d3d160 1-4
+test/fixtures/workspaces/packages/legacy/index.d.ts
+  s_01416be87042f9::t_9397704f29e946 1
+test/fixtures/workspaces/packages/legacy/package.json
+  s_01416be87042f9::t_820b9826c5d6ab 1-4
+test/project.test.ts
+  s_01416be87042f9::t_8886b57d8910da 137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a54485cffd1cc5eeed213eabf52a2d149805491",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
