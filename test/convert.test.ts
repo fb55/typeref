@@ -849,6 +849,8 @@ describe("Node.js modules", () => {
       query(project, "readable").signatures![0].returns,
       streams.returns,
       streams.comment?.summary[1],
+      query(project, "barreled").signatures![0].returns,
+      query(fixture(["builtins-types"]), "Readable"),
     ]).toMatchObject([
       {
         name: "Transform",
@@ -883,6 +885,17 @@ describe("Node.js modules", () => {
       {
         text: "stream.Readable",
         target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      // Re-exports of them, and their uses.
+      {
+        name: "Barreled",
+        target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+      },
+      {
+        kind: "Reference",
+        type: {
+          target: { kind: "url", url: "https://nodejs.org/api/stream.html" },
+        },
       },
     ]);
   });

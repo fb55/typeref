@@ -435,10 +435,20 @@ export class Program {
     name: string,
   ): Symbol | undefined {
     const target = this.importedFile(file, binding.source);
-    if (!target) return undefined;
-    return binding.imported === "*"
-      ? { kind: "module", name, file: target }
-      : this.getExport(target, binding.imported);
+    const symbol =
+      target &&
+      (binding.imported === "*"
+        ? { kind: "module" as const, name, file: target }
+        : this.getExport(target, binding.imported));
+    if (symbol) return symbol;
+    // Node.js's modules, imported or re-exported, have no files.
+    return isBuiltin(binding.source)
+      ? {
+          kind: "builtin",
+          name: binding.imported === "*" ? name : binding.imported,
+          module: builtinPage(binding.source),
+        }
+      : undefined;
   }
 
   /**
@@ -474,11 +484,7 @@ export class Program {
       }
       const binding = scope.imports.get(name);
       if (binding) {
-        const symbol = this.follow(file, binding, name);
-        if (symbol) return symbol;
-        return isBuiltin(binding.source)
-          ? { kind: "builtin", name, module: builtinPage(binding.source) }
-          : { kind: "global", name };
+        return this.follow(file, binding, name) ?? { kind: "global", name };
       }
     }
     return { kind: "global", name };

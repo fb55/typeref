@@ -744,11 +744,20 @@ class Converter {
         Number(symbolB?.name === nameB) - Number(symbolA?.name === nameA),
     );
     for (const [name, symbol] of declared) {
-      if (symbol?.kind !== "declaration") continue;
+      if (symbol?.kind !== "declaration" && symbol?.kind !== "builtin") {
+        continue;
+      }
       const statement = this.program.exportStatement(file, name, containers);
-      const existing = this.declarations.get(symbol.nodes[0]);
-      if (existing || !this.isDocumented(symbol.file.path)) {
-        // Exported twice, or exported from a dependency.
+      const existing =
+        symbol.kind === "declaration"
+          ? this.declarations.get(symbol.nodes[0])
+          : undefined;
+      if (
+        existing ||
+        symbol.kind === "builtin" ||
+        !this.isDocumented(symbol.file.path)
+      ) {
+        // Exported twice, or exported from a dependency or Node.js.
         const reference = this.create("Reference", name);
         if (existing) {
           reference.target = existing.id;
