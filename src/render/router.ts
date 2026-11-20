@@ -218,8 +218,8 @@ export class Router {
   }
 
   /**
-   * Of names declared more than once (in several entry points, or as static
-   * and instance members), the first wins.
+   * Of names declared more than once, static members win over instance
+   * members, otherwise the first (in the first entry point) does.
    *
    * @returns The index of the project's URLs, for others to link to.
    */
@@ -229,12 +229,16 @@ export class Router {
       const name = `${prefix}${declaration.name}`;
       const url = this.url(declaration);
       if (url !== undefined && !symbols.has(name)) symbols.set(name, url);
-      for (const child of [
+      // `Class.member` is the static member, as in TypeDoc's references.
+      const children = [
         ...(declaration.children ?? []),
         ...objectMembers(declaration),
-      ]) {
-        visit(child, `${name}.`);
-      }
+      ].toSorted(
+        (left, right) =>
+          Number(right.flags.static ?? false) -
+          Number(left.flags.static ?? false),
+      );
+      for (const child of children) visit(child, `${name}.`);
     };
     for (const module of this.project.modules) {
       for (const child of module.children ?? []) visit(child, "");

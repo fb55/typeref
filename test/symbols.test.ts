@@ -9,10 +9,14 @@ import { fetchSymbols } from "../src/symbols.ts";
 
 describe("fetchSymbols", () => {
   it("fetches indexes, and uses the last one fetched when they fail", async () => {
-    let isFailing = false;
+    let state: "ok" | "unavailable" | "page" = "ok";
     const server = createServer((request, response) => {
       if (request.url === "/docs/symbols.json") {
-        response.statusCode = isFailing ? 503 : 301;
+        if (state === "page") {
+          response.end("<!doctype html><title>Maintenance</title>");
+          return;
+        }
+        response.statusCode = state === "unavailable" ? 503 : 301;
         response.setHeader("location", "/api/symbols.json");
         response.end();
       } else if (request.url === "/api/symbols.json") {
@@ -37,8 +41,13 @@ describe("fetchSymbols", () => {
     };
     const cache = mkdtempSync(join(tmpdir(), "typeref-"));
     const online = await fetchSymbols(links, cache);
-    isFailing = true;
-    const failed = await fetchSymbols(links, cache);
+    state = "unavailable";
+    const unavailable = await fetchSymbols(links, cache);
+    // Error pages served as successes do not replace the last index.
+    state = "page";
+    await fetchSymbols(links, cache);
+    state = "unavailable";
+    const afterPage = await fetchSymbols(links, cache);
     await new Promise((resolve) => {
       server.close(resolve);
     });
@@ -50,6 +59,10 @@ describe("fetchSymbols", () => {
         new Map([["Node", `http://127.0.0.1:${port}/api/classes/Node.html`]]),
       ],
     ]);
-    expect([online, failed]).toStrictEqual([expected, expected]);
+    expect([online, unavailable, afterPage]).toStrictEqual([
+      expected,
+      expected,
+      expected,
+    ]);
   });
 });

@@ -23,3 +23,8 @@ export namespace Runner {
     void options;
   }
 }
+
+export declare class Schema {
+  parse(): void;
+  static parse(): void;
+}

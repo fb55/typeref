@@ -63,8 +63,7 @@ export async function fetchSymbols(
       if (!/^https?:\/\//u.test(base) || base.includes("{")) return;
       const url = new URL(indexUrl, base.replace(/\/?$/u, "/")).href;
       const file = join(cache, `${encodeURIComponent(name)}.json`);
-      let text: string;
-      let source: string;
+      let symbols: Symbols | undefined;
       try {
         const response = await fetch(url, {
           signal: AbortSignal.timeout(10_000),
@@ -75,9 +74,12 @@ export async function fetchSymbols(
           return;
         }
         if (!response.ok) throw new Error(response.statusText);
-        text = await response.text();
+        const text = await response.text();
         // Its URLs are relative to where it was found, after redirects.
-        source = response.url;
+        const source = response.url;
+        symbols = parseIndex(text, source);
+        // Not an index, such as a host's error page: the last one is kept.
+        if (!symbols) throw new Error(`${url} is not an index`);
         mkdirSync(cache, { recursive: true });
         writeFileSync(file, JSON.stringify({ url, source, text }));
       } catch {
@@ -87,13 +89,13 @@ export async function fetchSymbols(
             source: string;
             text: string;
           };
-          if (cached.url !== url) return;
-          ({ source, text } = cached);
+          if (cached.url === url) {
+            symbols = parseIndex(cached.text, cached.source);
+          }
         } catch {
-          return;
+          // Nothing fetched before.
         }
       }
-      const symbols = parseIndex(text, source);
       if (symbols) found.set(name, symbols);
     }),
   );

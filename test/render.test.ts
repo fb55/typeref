@@ -264,6 +264,8 @@ describe("renderHtml", () => {
       symbols: {
         "Outer.Deep.Options": "interfaces/Outer.Deep.Options.html",
         "Outer.Deep.Options.b": "interfaces/Outer.Deep.Options.html#b",
+        // Static members, as `typeof Schema.parse` refers to them.
+        "Schema.parse": "classes/Schema.html#parse-1",
       },
     });
   });
