@@ -2391,12 +2391,11 @@ class Converter {
       if (symbol.kind === "declaration") {
         found = this.declarations.get(symbol.nodes[0]);
       }
-      if (!found && rest.length === 0) {
+      // Members of Node.js's modules (`stream.Readable`) are on their pages.
+      if (!found && (rest.length === 0 || symbol.kind === "builtin")) {
         const target = this.targetOf(symbol, false);
         if (target) return target;
       }
-      // Members of Node.js's modules (`stream.Readable`) are on their pages.
-      if (symbol.kind === "builtin") return this.targetOf(symbol, false);
       // Members of namespace imports (`api.Parser#parse`), as types link
       // them, up to a documented declaration whose members are looked up.
       if (symbol.kind === "module" && rest.length > 0) {

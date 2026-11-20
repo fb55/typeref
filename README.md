@@ -47,18 +47,18 @@ import { defineConfig } from "typeref";
 export default defineConfig({ format: "markdown", basePath: "/docs/api/" });
 ```
 
-| Option                     | Default                  | Description                                                                                                           |
-| -------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `entryPoints`              | every subpath with types | Subpaths of `exports` (`"."`, `"./decode"`), or paths of declaration files.                                           |
-| `packages`                 | –                        | For monorepos: globs of the packages' directories (`["packages/*"]`). Each package's README is shown on its page.     |
-| `out`                      | `docs`                   | The output directory. Files that typeref did not write there are never replaced.                                      |
-| `format`                   | `html`                   | `html` for a site, `markdown` for a static site generator.                                                            |
-| `name`                     | the package's name       | The project's name.                                                                                                   |
-| `readme`                   | `README.md`              | The README for the index page, or `false` for none.                                                                   |
-| `links`                    | –                        | Docs of dependencies, by package name: a site's URL, or a template with `{kind}` and `{name}`.                        |
-| `basePath`                 | –                        | Markdown: the path the pages are served under. Links are relative without it.                                         |
-| `categoryPages`            | off                      | Classes, interfaces and enums with at least this many members get a page per `@category` of their members.            |
-| `shouldDocumentUnexported` | `false`                  | Also document declarations that exported ones use but that are not exported themselves, such as the types of options. |
+| Option                     | Default                  | Description                                                                                                                                                |
+| -------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entryPoints`              | every subpath with types | Subpaths of `exports` (`"."`, `"./decode"`), or paths of declaration files.                                                                                |
+| `packages`                 | –                        | For monorepos: globs of the packages' directories (`["packages/*"]`). Each package's README is shown on its page.                                          |
+| `out`                      | `docs`                   | The output directory. Files that typeref did not write there are never replaced.                                                                           |
+| `format`                   | `html`                   | `html` for a site, `markdown` for a static site generator.                                                                                                 |
+| `name`                     | the package's name       | The project's name.                                                                                                                                        |
+| `readme`                   | `README.md`              | The README for the index page, or `false` for none.                                                                                                        |
+| `links`                    | –                        | Docs of dependencies, by package name: a site's URL, or a template with `{kind}` and `{name}`.                                                             |
+| `basePath`                 | –                        | Markdown: the path the pages are served under. Links are relative without it.                                                                              |
+| `categoryPages`            | off                      | Classes, interfaces and enums with at least this many members, some with `@category`, get a page per category; members without one are on an `Other` page. |
+| `shouldDocumentUnexported` | `false`                  | Also document declarations that exported ones use but that are not exported themselves, such as the types of options.                                      |
 
 ## Comments
 
@@ -73,8 +73,10 @@ tagged `@internal`, `@hidden`, `@ignore` or `@private` are not documented.
 Types from dependencies link to their docs if `links` lists them. HTML sites
 built by typeref publish `symbols.json`, an index of their URLs: builds fetch
 it, and link only to what it lists (Markdown builds publish none). The last index fetched is kept in
-`node_modules/.cache/typeref`, for builds without a network. Sites that do not
-publish one, or links given as templates, follow TypeDoc's URLs.
+`node_modules/.cache/typeref`, for builds without a network. Links to sites
+that do not publish one follow TypeDoc's URLs (`classes/Element.html`); a
+template, such as `https://example.com/{kind}/{name}.html`, gives the URLs
+itself.
 
 Globals link to MDN or the TypeScript handbook, and imports from Node.js's
 modules (`node:stream`) to Node.js's docs.
