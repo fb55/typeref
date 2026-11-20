@@ -11,6 +11,10 @@ export type Keys = { "a|b": string };
  */
 export declare const load: (a: string) => number;
 
+/**
+ * @categoryDescription A
+ * The first category.
+ */
 export interface Multi {
   /**
    * In two categories.
@@ -19,6 +23,9 @@ export interface Multi {
    * @category B
    */
   both: string;
+  /** @category B */
+  second: string;
+  plain: number;
 }
 
 export type Hooks = { onError(error: Error): void };

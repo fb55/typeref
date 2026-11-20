@@ -2,13 +2,15 @@
  * Where each declaration is documented: pages for modules, namespaces,
  * classes, interfaces, enums, type aliases, functions and variables, anchors
  * on those pages for their members. URLs follow TypeDoc's, so links to sites
- * TypeDoc built keep working.
+ * TypeDoc built keep working. Optionally, categories of the members of
+ * classes, interfaces and enums get pages of their own.
  *
  * @module
  */
-import GithubSlugger from "github-slugger";
+import GithubSlugger, { slug as toSlug } from "github-slugger";
 
 import type { Declaration, Kind, Project } from "../model.ts";
+import { isCategorized, sections, type Section } from "./shared.ts";
 
 /** The directories of pages, by kind. */
 const directories: Partial<Record<Kind, string>> = {
@@ -27,9 +29,25 @@ export interface Page {
   url: string;
   /** The declaration the page documents; none for the project's pages. */
   declaration?: Declaration;
-  /** The README, the index of the project's exports, or a declaration. */
-  kind: "readme" | "index" | "declaration";
+  /**
+   * The README, the index of the project's exports, a declaration, or a
+   * category of its members.
+   */
+  kind: "readme" | "index" | "declaration" | "category";
+  /** For categories: the members documented on the page. */
+  section?: Section;
 }
+
+export interface RouterOptions {
+  /**
+   * Classes, interfaces and enums with at least this many members get a page
+   * for each category of their members.
+   */
+  categoryPages?: number;
+}
+
+/** Kinds whose members are documented on their pages, not on their own. */
+const splittable = new Set<Kind>(["Class", "Interface", "Enum"]);
 
 /**
  * Replaces characters that are not safe in file names, as TypeDoc does.
@@ -73,6 +91,8 @@ export class Router {
   private readonly objectMembers = new Set<Declaration>();
   private readonly byId = new Map<number, Declaration>();
   private readonly fileNames = new Set<string>();
+  private readonly categories = new Map<Declaration, Page[]>();
+  private readonly categoryPagesFrom: number;
   /** Anchors used on each page. */
   private readonly sluggers = new Map<string, GithubSlugger>();
   /** The URL of the project's index of exports. */
@@ -82,9 +102,15 @@ export class Router {
   /**
    * @param project The project.
    * @param extension The pages' extension, including its dot.
+   * @param options How to divide the documentation into pages.
    */
-  constructor(project: Project, extension: string) {
+  constructor(
+    project: Project,
+    extension: string,
+    options: RouterOptions = {},
+  ) {
     this.extension = extension;
+    this.categoryPagesFrom = options.categoryPages ?? Infinity;
     if (project.readme !== undefined && project.readme !== "") {
       this.pages.push({ url: this.fileName("index"), kind: "readme" });
       this.indexUrl = this.fileName("modules");
@@ -144,13 +170,46 @@ export class Router {
       this.urls.set(declaration, page);
       this.pages.push({ url: page, declaration, kind: "declaration" });
     }
-    for (const child of declaration.children ?? []) {
-      this.route(child, declaration, page);
+    const children = declaration.children ?? [];
+    // Members in several categories are documented in the first.
+    const pages = new Map<Declaration, string>();
+    if (
+      children.length >= this.categoryPagesFrom &&
+      splittable.has(declaration.kind) &&
+      isCategorized(children)
+    ) {
+      const base = page.slice(0, -this.extension.length);
+      const categories = sections(children, declaration.comment).map(
+        (section): Page => ({
+          url: this.fileName(`${base}/${toSlug(section.title) || "_"}`),
+          declaration,
+          kind: "category",
+          section,
+        }),
+      );
+      for (const category of categories) {
+        for (const member of category.section!.members) {
+          if (!pages.has(member)) pages.set(member, category.url);
+        }
+      }
+      this.categories.set(declaration, categories);
+      this.pages.push(...categories);
+    }
+    for (const child of children) {
+      this.route(child, declaration, pages.get(child) ?? page);
     }
     for (const child of objectMembers(declaration)) {
       this.objectMembers.add(child);
       this.route(child, declaration, page);
     }
+  }
+
+  /**
+   * @param declaration A class, interface or enum.
+   * @returns The pages of its members' categories, if they have pages.
+   */
+  categoryPages(declaration: Declaration): Page[] | undefined {
+    return this.categories.get(declaration);
   }
 
   /**

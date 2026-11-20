@@ -28,7 +28,7 @@ import type {
   Type,
   TypeParameter,
 } from "../model.ts";
-import { objectMembers, Router, topLevel } from "./router.ts";
+import { objectMembers, Router, topLevel, type Page } from "./router.ts";
 import {
   blockTags,
   inlineMarkdown,
@@ -37,6 +37,7 @@ import {
   markdownTree,
   returnsOf,
   sections,
+  type Section,
   signaturesOf,
   summaryOf,
 } from "./shared.ts";
@@ -100,6 +101,14 @@ function pageHeading(declaration: Declaration): Result {
   );
 }
 
+export interface HtmlOptions {
+  /**
+   * Classes, interfaces and enums with at least this many members get a page
+   * for each category of their members.
+   */
+  categoryPages?: number;
+}
+
 class HtmlWriter {
   private readonly router: Router;
   private readonly project: Project;
@@ -109,9 +118,13 @@ class HtmlWriter {
   /** The members documented on the current page. */
   private readonly rendered = new Set<Declaration>();
 
-  constructor(project: Project, highlighter: Highlighter) {
+  constructor(
+    project: Project,
+    highlighter: Highlighter,
+    options: HtmlOptions,
+  ) {
     this.project = project;
-    this.router = new Router(project, ".html");
+    this.router = new Router(project, ".html", options);
     const loaded = new Set(highlighter.getLoadedLanguages());
     this.markdown = {
       allowDangerousHtml: true,
@@ -182,12 +195,16 @@ class HtmlWriter {
             ? "API reference"
             : this.project.name;
         content = this.index(this.project);
+      } else if (page.kind === "category") {
+        const { declaration, section } = page as Required<Page>;
+        title = `${declaration.name}: ${section.title}`;
+        content = this.categoryPage(declaration, section);
       } else {
         const declaration = page.declaration!;
         title = declaration.name;
         content = this.declarationPage(declaration);
       }
-      files.set(page.url, this.layout(title, content, page.declaration));
+      files.set(page.url, this.layout(title, content, page));
     }
     files.set("assets/search.json", JSON.stringify(this.searchIndex()));
     for (const asset of ["style.css", "main.js"]) {
@@ -272,12 +289,9 @@ class HtmlWriter {
     return h("pre.signature", h("code", this.tokens(tokens(print))));
   }
 
-  private layout(
-    title: string,
-    content: Result,
-    current?: Declaration,
-  ): string {
+  private layout(title: string, content: Result, page: Page): string {
     const { project } = this;
+    const current = page.declaration;
     const description = current
       ? toString(markdownTree(summaryOf(current), () => undefined))
           .replaceAll(/\s+/gu, " ")
@@ -343,12 +357,8 @@ class HtmlWriter {
               h(
                 "div.layout",
                 h("main#Main", { tabindex: "-1" }, content),
-                this.toc(current),
-                h(
-                  "nav.site",
-                  { "aria-label": "API" },
-                  this.navigation(current),
-                ),
+                this.toc(page),
+                h("nav.site", { "aria-label": "API" }, this.navigation(page)),
               ),
               h(
                 "dialog#Search",
@@ -375,7 +385,7 @@ class HtmlWriter {
     );
   }
 
-  private navigation(current: Declaration | undefined): Result {
+  private navigation(page: Page): Result {
     return h(
       null,
       this.project.readme !== undefined && this.project.readme !== ""
@@ -390,6 +400,7 @@ class HtmlWriter {
           "ul",
           section.members.map((declaration) => {
             const url = this.memberUrl(declaration);
+            const categories = this.router.categoryPages(declaration);
             return h(
               "li",
               url === undefined
@@ -398,14 +409,37 @@ class HtmlWriter {
                     "a",
                     {
                       href: url,
+                      // On the pages of its categories, it is the parent.
                       "aria-current":
-                        declaration === current ? "page" : undefined,
+                        declaration === page.declaration
+                          ? page.kind === "category"
+                            ? "true"
+                            : "page"
+                          : undefined,
                       class: isDeprecated(declaration)
                         ? "deprecated"
                         : undefined,
                     },
                     declaration.name,
                   ),
+              categories &&
+                h(
+                  "ul",
+                  categories.map((category) =>
+                    h(
+                      "li",
+                      h(
+                        "a",
+                        {
+                          href: this.url(category.url),
+                          "aria-current":
+                            category === page ? "page" : undefined,
+                        },
+                        category.section!.title,
+                      ),
+                    ),
+                  ),
+                ),
             );
           }),
         ),
@@ -413,27 +447,35 @@ class HtmlWriter {
     );
   }
 
-  private toc(current: Declaration | undefined): Result | undefined {
-    const members = current?.children ?? [];
-    if (!current || !this.router.hasPage(current) || members.length === 0) {
+  private toc(page: Page): Result | undefined {
+    const current = page.declaration;
+    if (
+      !current ||
+      current.kind === "Module" ||
+      current.kind === "Namespace" ||
+      (current.children ?? []).length === 0
+    ) {
       return undefined;
     }
-    if (current.kind === "Module" || current.kind === "Namespace") {
-      return undefined;
-    }
+    const list = page.section
+      ? [page.section]
+      : (this.router
+          .categoryPages(current)
+          ?.map((category) => category.section!) ??
+        sections(current.children ?? []));
     return h(
       "nav.toc",
       { "aria-label": "On this page" },
       h("h2", "On this page"),
-      sections(members).flatMap((section) => [
+      list.flatMap((section) => [
         h("h3", section.title),
         h(
           "ul",
           section.members.map((member) => {
-            const anchor = this.anchorOf(member);
-            return anchor === undefined
+            const url = this.memberUrl(member);
+            return url === undefined
               ? undefined
-              : h("li", h("a", { href: `#${anchor}` }, member.name));
+              : h("li", h("a", { href: url }, member.name));
           }),
         ),
       ]),
@@ -448,37 +490,71 @@ class HtmlWriter {
       project.modules.length === 1
         ? this.comment(project.modules[0], 2)
         : undefined,
-      this.sectionsHtml(topLevel(project)),
+      sections(
+        topLevel(project),
+        project.modules.length === 1 ? project.modules[0].comment : undefined,
+      ).map((section) => this.sectionIndex(section)),
     );
   }
 
-  private sectionsHtml(members: Declaration[]): Result[] {
-    return sections(members).map((section) =>
+  /**
+   * @param declaration A class, interface or enum.
+   * @param section A category of its members.
+   * @returns The page of the category.
+   */
+  private categoryPage(declaration: Declaration, section: Section): Result {
+    return h(
+      "article",
       h(
-        "section",
-        h("h2", section.title),
+        "header.page-header",
         h(
-          "dl.index",
-          section.members.flatMap((member) => {
-            const url = this.memberUrl(member);
-            const external =
-              member.kind === "Reference" && member.type?.type === "reference";
-            const name = h("code", member.name);
-            return [
-              h(
-                "dt",
-                { class: isDeprecated(member) ? "deprecated" : undefined },
-                url === undefined ? name : h("a", { href: url }, name),
-              ),
-              h(
-                "dd",
-                external
-                  ? "Re-exported from a dependency."
-                  : this.inlineText(summaryOf(member)),
-              ),
-            ];
-          }),
+          "p.kind",
+          `${kindNames[declaration.kind]} `,
+          h("a", { href: this.memberUrl(declaration) }, declaration.name),
         ),
+        h("h1", section.title),
+      ),
+      this.text(section.description),
+      this.members(section.members, 2),
+    );
+  }
+
+  /**
+   * @param section A section of members.
+   * @param url The page it has, if any.
+   * @returns An index of the section's members.
+   */
+  private sectionIndex(section: Section, url?: string): Result {
+    return h(
+      "section",
+      h(
+        "h2",
+        url === undefined
+          ? section.title
+          : h("a", { href: this.url(url) }, section.title),
+      ),
+      this.text(section.description),
+      h(
+        "dl.index",
+        section.members.flatMap((member) => {
+          const href = this.memberUrl(member);
+          const external =
+            member.kind === "Reference" && member.type?.type === "reference";
+          const name = h("code", member.name);
+          return [
+            h(
+              "dt",
+              { class: isDeprecated(member) ? "deprecated" : undefined },
+              href === undefined ? name : h("a", { href }, name),
+            ),
+            h(
+              "dd",
+              external
+                ? "Re-exported from a dependency."
+                : this.inlineText(summaryOf(member)),
+            ),
+          ];
+        }),
       ),
     );
   }
@@ -545,7 +621,9 @@ class HtmlWriter {
       case "Namespace": {
         parts.push(
           this.comment(declaration, 2),
-          this.sectionsHtml(declaration.children ?? []),
+          sections(declaration.children ?? [], declaration.comment).map(
+            (section) => this.sectionIndex(section),
+          ),
         );
         const { readme, readmeUrl } = declaration as Module;
         if (readme !== undefined) {
@@ -572,9 +650,22 @@ class HtmlWriter {
             this.signatures(declaration, 3, ""),
           );
         }
-        for (const section of sections(declaration.children ?? [])) {
-          parts.push(h("h2", section.title), this.members(section.members, 3));
-        }
+        const categories = this.router.categoryPages(declaration);
+        // The members are on the categories' pages; this is their index.
+        const list = categories
+          ? categories.map(({ url, section }) =>
+              this.sectionIndex(section!, url),
+            )
+          : sections(declaration.children ?? [], declaration.comment).map(
+              (section) =>
+                h(
+                  null,
+                  h("h2", section.title),
+                  this.text(section.description),
+                  this.members(section.members, 3),
+                ),
+            );
+        parts.push(...list);
       }
     }
     return h("article", ...parts);
@@ -795,10 +886,14 @@ class HtmlWriter {
   private member(member: Declaration, level: number): Result {
     const anchor = this.anchorOf(member) ?? "";
     // Members in several categories are documented in the first.
-    if (this.rendered.has(member)) {
+    const home = this.router.url(member)?.split("#")[0];
+    if (
+      this.rendered.has(member) ||
+      (home !== undefined && home !== this.page)
+    ) {
       return h(
         "p.also",
-        h("a", { href: `#${anchor}` }, h("code", member.name)),
+        h("a", { href: this.memberUrl(member) }, h("code", member.name)),
       );
     }
     this.rendered.add(member);
@@ -939,17 +1034,19 @@ class HtmlWriter {
  * Renders a project as an HTML site.
  *
  * @param project The project.
+ * @param options How to render it.
  * @returns The files, by path.
  */
 export async function renderHtml(
   project: Project,
+  options: HtmlOptions = {},
 ): Promise<Map<string, string>> {
   const highlighter = await createHighlighter({
     themes: ["github-light-high-contrast", "github-dark-default"],
     langs: languages,
   });
   try {
-    return new HtmlWriter(project, highlighter).render();
+    return new HtmlWriter(project, highlighter, options).render();
   } finally {
     highlighter.dispose();
   }

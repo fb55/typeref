@@ -38,6 +38,7 @@ import {
   markdownTree,
   returnsOf,
   sections,
+  type Section,
   signaturesOf,
   summaryOf,
 } from "./shared.ts";
@@ -46,6 +47,11 @@ import { plain, tokens, type Token, type TypePrinter } from "./types.ts";
 export interface MarkdownOptions {
   /** The path the pages are served under; links are relative without it. */
   basePath?: string;
+  /**
+   * Classes, interfaces and enums with at least this many members get a page
+   * for each category of their members.
+   */
+  categoryPages?: number;
 }
 
 /** Keywords shown in italics in text, as operators. */
@@ -201,7 +207,7 @@ class MarkdownWriter {
   private readonly rendered = new Set<Declaration>();
 
   constructor(project: Project, options: MarkdownOptions) {
-    this.router = new Router(project, ".md");
+    this.router = new Router(project, ".md", options);
     // Pages' paths follow the base path's slash, given or not.
     this.basePath = options.basePath?.replace(/\/?$/u, "/");
   }
@@ -220,7 +226,9 @@ class MarkdownWriter {
                 children:
                   page.kind === "index"
                     ? this.index(project)
-                    : this.declarationPage(page.declaration!),
+                    : page.kind === "category"
+                      ? this.categoryPage(page.declaration!, page.section!)
+                      : this.declarationPage(page.declaration!),
               },
               syntax,
             );
@@ -297,8 +305,52 @@ class MarkdownWriter {
     if (project.modules.length === 1) {
       out.push(...this.comment(project.modules[0], 2));
     }
-    for (const section of sections(topLevel(project))) {
-      out.push(heading(2, section.title), this.table(section.members));
+    for (const section of sections(
+      topLevel(project),
+      project.modules.length === 1 ? project.modules[0].comment : undefined,
+    )) {
+      out.push(...this.sectionHeading(section), this.table(section.members));
+    }
+    return out;
+  }
+
+  /**
+   * @param section A section of members.
+   * @param url The page it has, if any.
+   * @returns Its heading, linked to its page, and description.
+   */
+  private sectionHeading(section: Section, url?: string): RootContent[] {
+    const title = heading(2, section.title);
+    if (url !== undefined) {
+      title.children = [linked(this.url(url), text(section.title))];
+    }
+    return [title, ...this.text(section.description)];
+  }
+
+  /**
+   * @param declaration A class, interface or enum.
+   * @param section A category of its members.
+   * @returns The page of the category.
+   */
+  private categoryPage(
+    declaration: Declaration,
+    section: Section,
+  ): RootContent[] {
+    const out: RootContent[] = [
+      heading(1, `${declaration.name}: ${section.title}`),
+      paragraph([
+        text("Members of "),
+        linked(
+          this.url(this.router.url(declaration)!),
+          inlineCode(declaration.name),
+        ),
+        text("."),
+      ]),
+      ...this.text(section.description),
+    ];
+    for (const [index, member] of section.members.entries()) {
+      if (index > 0) out.push({ type: "thematicBreak" });
+      out.push(...this.member(member, 2));
     }
     return out;
   }
@@ -390,8 +442,14 @@ class MarkdownWriter {
       case "Module":
       case "Namespace": {
         out.push(...this.comment(declaration, 2));
-        for (const section of sections(declaration.children ?? [])) {
-          out.push(heading(2, section.title), this.table(section.members));
+        for (const section of sections(
+          declaration.children ?? [],
+          declaration.comment,
+        )) {
+          out.push(
+            ...this.sectionHeading(section),
+            this.table(section.members),
+          );
         }
         // Packages' READMEs, as they are written.
         const { readme } = declaration as Module;
@@ -420,8 +478,22 @@ class MarkdownWriter {
         if (declaration.signatures) {
           out.push(...this.signatures(declaration, 2, ""));
         }
-        for (const section of sections(declaration.children ?? [])) {
-          out.push(heading(2, section.title));
+        const categories = this.router.categoryPages(declaration);
+        if (categories) {
+          // The members are on the categories' pages; this is their index.
+          for (const { url, section } of categories) {
+            out.push(
+              ...this.sectionHeading(section!, url),
+              this.table(section!.members),
+            );
+          }
+          break;
+        }
+        for (const section of sections(
+          declaration.children ?? [],
+          declaration.comment,
+        )) {
+          out.push(...this.sectionHeading(section));
           for (const [index, member] of section.members.entries()) {
             if (index > 0) out.push({ type: "thematicBreak" });
             out.push(...this.member(member, 3));
@@ -637,8 +709,11 @@ class MarkdownWriter {
 
   private member(member: Declaration, level: number): RootContent[] {
     // Members in several categories are documented in the first.
-    if (this.rendered.has(member)) {
-      const url = this.router.url(member);
+    const url = this.router.url(member);
+    if (
+      this.rendered.has(member) ||
+      (url !== undefined && url.split("#")[0] !== this.page)
+    ) {
       return url === undefined
         ? []
         : [

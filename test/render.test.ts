@@ -117,6 +117,33 @@ describe("renderMarkdown of special cases", () => {
     ).toHaveLength(1);
   });
 
+  it("writes pages for the categories of declarations with enough members", () => {
+    const project = fixture(["rendering"]);
+    const split = renderMarkdown(project, { categoryPages: 3 });
+    expect([
+      [...split.keys()].filter((path) => path.startsWith("interfaces/Multi")),
+      split.get("interfaces/Multi.md"),
+      split.get("interfaces/Multi/b.md"),
+      renderMarkdown(project, { categoryPages: 4 }).has(
+        "interfaces/Multi/a.md",
+      ),
+    ]).toStrictEqual([
+      [
+        "interfaces/Multi.md",
+        "interfaces/Multi/a.md",
+        "interfaces/Multi/b.md",
+        "interfaces/Multi/other.md",
+      ],
+      expect.stringContaining(
+        "## [A](Multi/a.md)\n\nThe first category.\n\n| Property | Description |\n| - | - |\n| [both](Multi/a.md#both) | In two categories. |",
+      ),
+      expect.stringMatching(
+        /^# Multi: B\n\nMembers of \[`Multi`\]\(\.\.\/Multi\.md\)\.\n\nSee \[both\]\(a\.md#both\)\.\n\n\*\*\*\n\n## second$/mu,
+      ),
+      false,
+    ]);
+  });
+
   it("describes a variable's function type once, with its comment's tags", () => {
     const page = files.get("variables/load.md")!;
     expect([
@@ -220,6 +247,19 @@ describe("renderHtml", () => {
     expect(files.get("types/Hooks.html")).toMatch(
       /<h3 id="onerror"><a class="anchor" href="#onerror">onError<\/a>/u,
     );
+  });
+
+  it("links to members on the pages of their categories", async () => {
+    const files = await renderHtml(fixture(["rendering"]), {
+      categoryPages: 3,
+    });
+    expect([
+      files.get("interfaces/Multi/b.html"),
+      files.get("interfaces/Multi.html"),
+    ]).toStrictEqual([
+      expect.stringContaining('<p class="also"><a href="a.html#both">'),
+      expect.stringContaining('<li><a href="Multi/a.html#both">both</a></li>'),
+    ]);
   });
 
   it("documents a member of several categories once", async () => {

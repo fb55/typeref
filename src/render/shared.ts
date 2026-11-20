@@ -75,6 +75,8 @@ const hiddenTags = new Set([
 export interface Section {
   title: string;
   members: Declaration[];
+  /** From the owner's `@categoryDescription` or `@groupDescription`. */
+  description?: Part[];
 }
 
 /**
@@ -130,34 +132,74 @@ function titlesOf(member: Declaration, tag: string): string[] {
 }
 
 /**
+ * @param members Members.
+ * @returns Whether any of them has a category.
+ */
+export function isCategorized(members: Declaration[]): boolean {
+  return members.some((member) => titlesOf(member, "@category").length > 0);
+}
+
+/**
+ * @param comment The comment of the sections' owner.
+ * @param tag `@categoryDescription` or `@groupDescription`.
+ * @param title A section's title.
+ * @returns The description of the section: the tag's text after its first
+ *   line, which names the section.
+ */
+function describe(
+  comment: Comment | undefined,
+  tag: string,
+  title: string,
+): Part[] | undefined {
+  for (const block of comment?.blockTags ?? []) {
+    const [first, ...rest] = block.content;
+    if (block.tag !== tag || first?.kind !== "text") continue;
+    const end = first.text.indexOf("\n");
+    if (first.text.slice(0, end === -1 ? undefined : end).trim() !== title) {
+      continue;
+    }
+    const remainder = end === -1 ? "" : first.text.slice(end + 1);
+    return remainder.trim() === ""
+      ? rest
+      : [{ kind: "text", text: remainder }, ...rest];
+  }
+  return undefined;
+}
+
+/**
  * Splits members into sections: their categories if any has one (`Other`
  * for the rest), otherwise their groups (by kind, or `@group`).
  *
  * @param members The members, in order.
+ * @param owner The comment of their owner, which may describe the sections.
  * @returns The sections, in order.
  */
-export function sections(members: Declaration[]): Section[] {
+export function sections(members: Declaration[], owner?: Comment): Section[] {
   const byTitle = new Map<string, Declaration[]>();
   const add = (title: string, member: Declaration): void => {
     const list = byTitle.get(title);
     if (list) list.push(member);
     else byTitle.set(title, [member]);
   };
-  const isCategorized = members.some(
-    (member) => titlesOf(member, "@category").length > 0,
-  );
+  const categorized = isCategorized(members);
   for (const member of members) {
-    const titles = titlesOf(member, isCategorized ? "@category" : "@group");
+    const titles = titlesOf(member, categorized ? "@category" : "@group");
     if (titles.length === 0) {
-      add(isCategorized ? "Other" : groupTitles[member.kind], member);
+      add(categorized ? "Other" : groupTitles[member.kind], member);
     }
     for (const title of titles) add(title, member);
   }
-  const result = [...byTitle].map(([title, list]) => ({
-    title,
-    members: list,
-  }));
-  return isCategorized
+  const result = [...byTitle].map(([title, list]): Section => {
+    const description = describe(
+      owner,
+      categorized ? "@categoryDescription" : "@groupDescription",
+      title,
+    );
+    return description === undefined || description.length === 0
+      ? { title, members: list }
+      : { title, members: list, description };
+  });
+  return categorized
     ? result.toSorted((left, right) => left.title.localeCompare(right.title))
     : result;
 }

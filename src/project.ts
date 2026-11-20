@@ -43,6 +43,11 @@ export interface Config {
   /** Markdown: the path the pages are served under, e.g. `/docs/api/`. */
   basePath?: string;
   /**
+   * Classes, interfaces and enums with at least this many members get a page
+   * for each category (`@category`) of their members. Off by default.
+   */
+  categoryPages?: number;
+  /**
    * Whether to document declarations that are used by exported ones but not
    * exported themselves (such as the types of a constructor's options).
    */

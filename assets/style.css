@@ -205,12 +205,18 @@ main:focus {
   white-space: nowrap;
 }
 
+/* Pages of categories, under their class. */
+.site ul ul {
+  padding-inline-start: 0.75rem;
+}
+
 .site a:hover,
 .toc a:hover {
   color: var(--accent);
 }
 
-.site a[aria-current="page"],
+/* A class is current on the pages of its categories, too. */
+.site a[aria-current],
 .toc a[aria-current="true"] {
   border-left-color: var(--accent);
   color: var(--accent);

@@ -30,11 +30,8 @@ export async function build(
   const project = loadProject(root, config);
   const files =
     config.format === "markdown"
-      ? renderMarkdown(
-          project,
-          config.basePath === undefined ? {} : { basePath: config.basePath },
-        )
-      : await renderHtml(project);
+      ? renderMarkdown(project, config)
+      : await renderHtml(project, config);
   const out = resolve(root, config.out ?? "docs");
   // The files the last build wrote; those it no longer writes are removed.
   const manifest = join(out, ".typeref-files");
