@@ -96,3 +96,13 @@ export type Loader = {
   (id: string): number;
   clear(): void;
 };
+
+export interface Handlers {
+  /**
+   * Handles values.
+   *
+   * @param value - The value.
+   * @returns Whether it was handled.
+   */
+  handle: (value: string) => boolean;
+}

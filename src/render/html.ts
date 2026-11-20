@@ -849,7 +849,7 @@ class HtmlWriter {
     level: number,
     declaration: Declaration,
   ): Result {
-    // A variable of a function type describes the function.
+    // Variables and properties of function types describe the function.
     const comment =
       signature.comment ??
       (declaration.type?.type === "function" ? declaration.comment : undefined);
@@ -975,8 +975,14 @@ class HtmlWriter {
             }
           }),
           definedIn(member.sources),
-          this.comment(member, level + 1),
-          this.relations(member),
+          // Members of function types are described as functions.
+          member.type?.type === "function"
+            ? h(
+                null,
+                this.text(member.comment?.summary),
+                this.signatureDetails(member.type.signature, level + 1, member),
+              )
+            : h(null, this.comment(member, level + 1), this.relations(member)),
         );
       }
     }

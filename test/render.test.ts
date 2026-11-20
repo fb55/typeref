@@ -144,6 +144,14 @@ describe("renderMarkdown of special cases", () => {
     ]);
   });
 
+  it("describes properties of function types as functions", () => {
+    expect(
+      renderMarkdown(fixture(["rendering"])).get("interfaces/Handlers.md"),
+    ).toContain(
+      "Handles values.\n\n#### Parameters\n\n| Parameter | Type | Description |\n| - | - | - |\n| `value` | `string` | The value. |\n\n#### Returns\n\n`boolean`\n\nWhether it was handled.",
+    );
+  });
+
   it("describes a variable's function type once, with its comment's tags", () => {
     const page = files.get("variables/load.md")!;
     expect([

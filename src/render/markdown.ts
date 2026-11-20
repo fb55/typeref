@@ -673,7 +673,7 @@ class MarkdownWriter {
         ),
       );
     }
-    // A variable of a function type describes the function.
+    // Variables and properties of function types describe the function.
     const comment =
       signature.comment ??
       (declaration.type?.type === "function" ? declaration.comment : undefined);
@@ -778,8 +778,20 @@ class MarkdownWriter {
             printer.punctuation(";");
           }),
           ...definedIn(member.sources),
-          ...this.comment(member, level + 1),
-          ...this.relations(member, level + 1),
+          // Members of function types are described as functions.
+          ...(member.type?.type === "function"
+            ? [
+                ...this.text(member.comment?.summary),
+                ...this.signatureDetails(
+                  member.type.signature,
+                  level + 1,
+                  member,
+                ),
+              ]
+            : [
+                ...this.comment(member, level + 1),
+                ...this.relations(member, level + 1),
+              ]),
         );
       }
     }
