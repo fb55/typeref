@@ -1,0 +1,22 @@
+README.md
+  s_01416be87042f9::t_bcad631c8d4b13 3-4,8,11-31,33,35-41,52-82,85,87-88,102-105,107,112-113,117-132
+  s_01416be87042f9::t_e3f6f0111e53a2 133
+package.json
+  s_01416be87042f9::t_1ac3e638d1d667 4,7-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe11d457344c8133b40f6d3bc3c958b341031df7",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
