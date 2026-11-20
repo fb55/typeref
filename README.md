@@ -33,8 +33,9 @@ TypeScript type checker.
 
 ## Where the ideas come from
 
-- [TypeDoc](https://typedoc.org/): URLs, comment tags and declaration
-  references, so existing sites and comments carry over.
+- [TypeDoc](https://typedoc.org/): the HTML URLs, comment tags and
+  declaration references. TypeDoc's plugins and themes do not work with
+  typeref.
 - [typedoc-plugin-markdown](https://typedoc-plugin-markdown.org/): the layout
   of the Markdown pages.
 - [API Extractor](https://api-extractor.com/): declaration files as the
