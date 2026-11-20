@@ -469,7 +469,15 @@ class HtmlWriter {
       ? undefined
       : this.router.categoryPages(current);
     const list = page.section
-      ? [page.section]
+      ? [
+          {
+            ...page.section,
+            // Members of several categories are on their first one's page.
+            members: page.section.members.filter(
+              (member) => this.router.url(member)?.split("#")[0] === page.url,
+            ),
+          },
+        ]
       : (categories?.map((category) => category.section!) ??
         sections(current.children ?? []));
     // The index of categories' pages links to members on those pages.

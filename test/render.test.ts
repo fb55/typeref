@@ -275,13 +275,17 @@ describe("renderHtml", () => {
       categoryPages: 3,
     });
     const index = files.get("interfaces/Multi.html")!;
+    const page = files.get("interfaces/Multi/b.html")!;
     expect([
-      files.get("interfaces/Multi/b.html"),
+      page,
+      // Its navigation lists only the members on it.
+      /<nav class="toc".*?<\/nav>/u.exec(page)?.[0].match(/<li>/gu)?.length,
       index,
       // Old links to members find them in the index, once.
       index.match(/id="both"/gu)?.length,
     ]).toStrictEqual([
       expect.stringContaining('<p class="also"><a href="a.html#both">'),
+      1,
       expect.stringMatching(
         /aria-label="Members">.*<li><a href="Multi\/a.html#both">both<\/a><\/li>/u,
       ),
