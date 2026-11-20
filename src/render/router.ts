@@ -96,6 +96,8 @@ export class Router {
   private readonly byId = new Map<number, Declaration>();
   private readonly fileNames = new Set<string>();
   private readonly categories = new Map<Declaration, Page[]>();
+  /** Members' anchors on the index of their categories' pages. */
+  private readonly indexAnchors = new Map<Declaration, string>();
   private readonly categoryPagesFrom: number;
   /** Anchors used on each page. */
   private readonly sluggers = new Map<string, GithubSlugger>();
@@ -200,6 +202,11 @@ export class Router {
       }
       this.categories.set(declaration, categories);
       this.pages.push(...categories);
+      // Links to members on the declaration's page, from before it was
+      // split, find them in its index.
+      for (const child of children) {
+        this.indexAnchors.set(child, this.anchor(page, child.name));
+      }
     }
     for (const child of children) {
       this.route(child, declaration, pages.get(child) ?? page);
@@ -233,6 +240,14 @@ export class Router {
       for (const child of module.children ?? []) visit(child, "");
     }
     return { version: 1, symbols: Object.fromEntries(symbols) };
+  }
+
+  /**
+   * @param member A member documented on the page of its category.
+   * @returns Its anchor in the index of the categories' pages.
+   */
+  indexAnchor(member: Declaration): string | undefined {
+    return this.indexAnchors.get(member);
   }
 
   /**

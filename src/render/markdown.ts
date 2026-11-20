@@ -370,8 +370,16 @@ class MarkdownWriter {
           ? undefined
           : this.url(this.router.url(member)!);
       const label = linked(url, text(member.name));
+      // Links to the member from before its declaration's page was split.
+      const anchor = this.router.indexAnchor(member);
+      const isFirst = !this.rendered.has(member);
+      this.rendered.add(member);
+      const name: PhrasingContent[] =
+        anchor !== undefined && isFirst
+          ? [{ type: "html", value: `<a id="${anchor}"></a>` }, label]
+          : [label];
       return [
-        [label],
+        name,
         external ? [text("Re-exports "), label] : this.cell(summaryOf(member)),
       ];
     });

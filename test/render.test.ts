@@ -135,7 +135,7 @@ describe("renderMarkdown of special cases", () => {
         "interfaces/Multi/other.md",
       ],
       expect.stringContaining(
-        "## [A](Multi/a.md)\n\nThe first category.\n\n| Property | Description |\n| - | - |\n| [both](Multi/a.md#both) | In two categories. |",
+        '## [A](Multi/a.md)\n\nThe first category.\n\n| Property | Description |\n| - | - |\n| <a id="both"></a>[both](Multi/a.md#both) | In two categories. |',
       ),
       expect.stringMatching(
         /^# Multi: B\n\nMembers of \[`Multi`\]\(\.\.\/Multi\.md\)\.\n\nSee \[both\]\(a\.md#both\)\.\n\n\*\*\*\n\n## second$/mu,
@@ -272,12 +272,18 @@ describe("renderHtml", () => {
     const files = await renderHtml(fixture(["rendering"]), {
       categoryPages: 3,
     });
+    const index = files.get("interfaces/Multi.html")!;
     expect([
       files.get("interfaces/Multi/b.html"),
-      files.get("interfaces/Multi.html"),
+      index,
+      // Old links to members find them in the index, once.
+      index.match(/id="both"/gu)?.length,
     ]).toStrictEqual([
       expect.stringContaining('<p class="also"><a href="a.html#both">'),
-      expect.stringContaining('<li><a href="Multi/a.html#both">both</a></li>'),
+      expect.stringMatching(
+        /aria-label="Members">.*<li><a href="Multi\/a.html#both">both<\/a><\/li>/u,
+      ),
+      1,
     ]);
   });
 

@@ -465,16 +465,19 @@ class HtmlWriter {
     ) {
       return undefined;
     }
+    const categories = page.section
+      ? undefined
+      : this.router.categoryPages(current);
     const list = page.section
       ? [page.section]
-      : (this.router
-          .categoryPages(current)
-          ?.map((category) => category.section!) ??
+      : (categories?.map((category) => category.section!) ??
         sections(current.children ?? []));
+    // The index of categories' pages links to members on those pages.
+    const label = categories ? "Members" : "On this page";
     return h(
       "nav.toc",
-      { "aria-label": "On this page" },
-      h("h2", "On this page"),
+      { "aria-label": label },
+      h("h2", label),
       list.flatMap((section) => [
         h("h3", section.title),
         h(
@@ -549,10 +552,18 @@ class HtmlWriter {
           const external =
             member.kind === "Reference" && member.type?.type === "reference";
           const name = h("code", member.name);
+          // Links to the member from before its declaration's page was split.
+          const anchor = this.rendered.has(member)
+            ? undefined
+            : this.router.indexAnchor(member);
+          this.rendered.add(member);
           return [
             h(
               "dt",
-              { class: isDeprecated(member) ? "deprecated" : undefined },
+              {
+                id: anchor,
+                class: isDeprecated(member) ? "deprecated" : undefined,
+              },
               href === undefined ? name : h("a", { href }, name),
             ),
             h(
