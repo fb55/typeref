@@ -140,4 +140,4 @@ const files = renderMarkdown(project, { basePath: "/docs/api/" });
 
 ## License
 
-MIT
+BSD-2-Clause
