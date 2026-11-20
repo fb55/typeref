@@ -19,9 +19,9 @@ TypeScript 7 for [cheerio](https://cheerio.js.org/),
 emitted declarations with [oxc](https://oxc.rs/), so generating docs needs no
 TypeScript type checker.
 
-- **Moving from TypeDoc keeps your links and comments.** HTML pages have
-  TypeDoc's URLs, and comments use its tags: `@param`, `@returns`,
-  `{@link}` and the rest.
+- **Keep your TypeDoc links and comments.** HTML pages use TypeDoc's URLs,
+  and comments its tags (`@param`, `@returns`, `{@link}`); keep doc comments
+  in your emitted `.d.ts` files (no `removeComments`).
 - **Fast.** On one machine, the docs of parse5's six packages took 0.73 s and
   183 MB with typeref, against 3.62 s and 600 MB with TypeDoc.
 - **Fits static sites.** Markdown for any static site generator, or pages
@@ -118,7 +118,7 @@ In development, pages update as the declaration files change.
 ```ts
 import { build, loadProject, renderMarkdown } from "typeref";
 
-await build(process.cwd(), { format: "markdown" }); // What the command does.
+await build(process.cwd(), { format: "markdown" }); // Writes Markdown to docs/.
 const project = loadProject(process.cwd()); // The docs as JSON.
 const files = renderMarkdown(project, { basePath: "/docs/api/" });
 ```
