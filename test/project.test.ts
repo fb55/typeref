@@ -134,6 +134,14 @@ describe("loadProject", () => {
     ).toStrictEqual(["other"]);
   });
 
+  it("documents the published packages of npm workspaces", () => {
+    expect(
+      loadProject(join(fixtures, "workspaces")).modules.map(
+        (module) => module.name,
+      ),
+    ).toStrictEqual(["lib"]);
+  });
+
   it("documents the packages of a monorepo, linking between them", () => {
     const project = loadProject(join(fixtures, "monorepo"), {
       packages: ["packages/*"],

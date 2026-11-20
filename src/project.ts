@@ -26,7 +26,10 @@ export interface Config {
    * that has types.
    */
   entryPoints?: string[];
-  /** For monorepos: globs of the directories of the packages to document. */
+  /**
+   * For monorepos: globs of the directories of the packages to document. By
+   * default, the published packages of a private root's `workspaces`.
+   */
   packages?: string[];
   /** The output directory. Defaults to `docs`. */
   out?: string;
@@ -68,8 +71,18 @@ export const defineConfig = (config: Config): Config => config;
 interface PackageJson {
   name?: string;
   version?: string;
+  private?: unknown;
   exports?: unknown;
+  /** As npm and Yarn write them: an array, or Yarn's `{ packages }`. */
+  workspaces?: string[] | { packages?: string[] };
 }
+
+/**
+ * @param json A `package.json`.
+ * @returns Whether npm keeps the package from being published: it takes any
+ *   truthy `private`, such as parse5's `"true"`.
+ */
+const isPrivate = (json: PackageJson): boolean => Boolean(json.private);
 
 /**
  * @param directory A directory.
@@ -221,11 +234,24 @@ export function loadProject(
   const root = resolve(path);
   const program = new Program();
   const json = readPackage(root);
-  const directories = config.packages
-    ? config.packages
+  // The root of a monorepo is private; published roots are the package.
+  const workspaces = isPrivate(json)
+    ? Array.isArray(json.workspaces)
+      ? json.workspaces
+      : json.workspaces?.packages
+    : undefined;
+  const patterns = config.packages ?? workspaces;
+  const directories = patterns
+    ? patterns
         .flatMap((pattern) => globSync(pattern, { cwd: root }))
         .map((directory) => resolve(root, directory))
-        .filter((directory) => existsSync(join(directory, "package.json")))
+        .filter(
+          (directory) =>
+            existsSync(join(directory, "package.json")) &&
+            // Of workspaces, those published: not tests or benchmarks.
+            (config.packages !== undefined ||
+              !isPrivate(readPackage(directory))),
+        )
         .toSorted()
     : [root];
   const entries = directories.flatMap((directory) =>
@@ -246,7 +272,7 @@ export function loadProject(
   const sources = new Sources();
   addReadme(project, readmePath(root, config.readme), sources);
   // Packages of a monorepo show their READMEs on their modules' pages.
-  if (config.packages) {
+  if (patterns) {
     for (const [index, { directory }] of entries.entries()) {
       addReadme(project.modules[index], findReadme(directory), sources);
     }

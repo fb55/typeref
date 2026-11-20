@@ -1,0 +1,5 @@
+{
+  "name": "tools",
+  "private": "true",
+  "types": "index.d.ts"
+}
