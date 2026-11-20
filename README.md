@@ -22,8 +22,8 @@ TypeScript type checker.
 - **Keep your TypeDoc links and comments.** HTML pages use TypeDoc's URLs,
   and comments its tags (`@param`, `@returns`, `{@link}`); keep doc comments
   in your emitted `.d.ts` files (no `removeComments`).
-- **Fast.** On one machine, the docs of parse5's six packages took 0.73 s and
-  183 MB with typeref, against 3.62 s and 600 MB with TypeDoc.
+- **Monorepos need no setup.** typeref documents the published packages of
+  your npm workspaces.
 - **Fits static sites.** Markdown for any static site generator, or pages
   loaded straight into [Astro](https://astro.build/) content collections.
 - **Links to your dependencies' docs.** Set a dependency's docs URL once in
@@ -46,7 +46,8 @@ TypeScript type checker.
 ## Usage
 
 typeref documents your package's explicit `exports` that have declarations,
-with your README on the index page. For wildcard exports (`"./*"`), list the
+with your README on the index page; in a monorepo, those of each published
+workspace package. For wildcard exports (`"./*"`), list the
 subpaths in `entryPoints`. With declaration maps, pages link each declaration
 to its source, when your `origin` remote is on GitHub or GitLab.
 
@@ -65,7 +66,7 @@ Options go under a `typeref` key in `package.json`, or in `typeref.config.ts`
 | Option                     | Default                 | Description                                                                                                             |
 | -------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `entryPoints`              | auto-discovered exports | Subpaths of `exports` (`"."`, `"./decode"`), or paths of declaration files.                                             |
-| `packages`                 | –                       | For monorepos: globs of the packages' directories (`["packages/*"]`).                                                   |
+| `packages`                 | published workspaces    | For monorepos: globs of the packages' directories (`["packages/*"]`).                                                   |
 | `out`                      | `docs`                  | The output directory. The build stops if a file it would write there came from another tool, such as TypeDoc.           |
 | `format`                   | `html`                  | `html` for a site, `markdown` for a static site generator.                                                              |
 | `name`                     | the package's name      | The project's name.                                                                                                     |
