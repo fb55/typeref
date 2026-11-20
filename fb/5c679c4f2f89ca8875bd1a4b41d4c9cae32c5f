@@ -1,0 +1,31 @@
+src/convert.ts
+  s_01416be87042f9::t_34c05e2cfcfa2f 826,828-830
+src/program.ts
+  s_01416be87042f9::t_33b16906ffa122 33-34,483,502
+src/symbols.ts
+  s_01416be87042f9::t_3c1c539fc7a3c8 49-50,67,73,77,79-80,82,87,91,96
+test/fixtures/linked/lib/index.d.ts
+  s_01416be87042f9::t_185430a70347ae 1,5-9
+test/fixtures/linked/node_modules/.pnpm/dep@1.0.0/node_modules/dep/index.d.ts
+  s_01416be87042f9::t_23922084093074 6-9
+test/project.test.ts
+  s_01416be87042f9::t_e321754408af20 62-71,79-81,83-88
+test/symbols.test.ts
+  s_01416be87042f9::t_7f003bdb549fb9 11-12,15-18,40-41,46,50,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb5c679c4f2f89ca8875bd1a4b41d4c9cae32c5f",
+  "prompts": {},
+  "sessions": {
+    "s_01416be87042f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f09708ce-ade4-47f5-886a-a33e8db194c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Felix Boehm <188768+fb55@users.noreply.github.com>"
+    }
+  }
+}
