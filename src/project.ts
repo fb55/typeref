@@ -95,6 +95,19 @@ function findReadme(directory: string): string | undefined {
 }
 
 /**
+ * @param root The project's directory.
+ * @param readme The README configured: a path, or `false` for none.
+ * @returns The README's path, if the project has one.
+ */
+export function readmePath(
+  root: string,
+  readme: Config["readme"],
+): string | undefined {
+  if (readme === false) return undefined;
+  return readme === undefined ? findReadme(root) : resolve(root, readme);
+}
+
+/**
  * @param target A declaration or project to give a README.
  * @param path The README's path.
  * @param sources Where to find the README in its repository.
@@ -231,15 +244,7 @@ export function loadProject(
     ...(config.shouldDocumentUnexported && { shouldDocumentUnexported: true }),
   });
   const sources = new Sources();
-  if (config.readme !== false) {
-    addReadme(
-      project,
-      config.readme === undefined
-        ? findReadme(root)
-        : resolve(root, config.readme),
-      sources,
-    );
-  }
+  addReadme(project, readmePath(root, config.readme), sources);
   // Packages of a monorepo show their READMEs on their modules' pages.
   if (config.packages) {
     for (const [index, { directory }] of entries.entries()) {

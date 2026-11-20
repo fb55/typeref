@@ -17,14 +17,14 @@
  *
  * @module
  */
-import { join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, relative, resolve, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { toString } from "mdast-util-to-string";
 
 import type { Kind } from "./model.ts";
-import { loadProject, type Config } from "./project.ts";
+import { loadProject, readmePath, type Config } from "./project.ts";
 import { renderMarkdownPages } from "./render/markdown.ts";
 import type { Page } from "./render/router.ts";
 import { fetchSymbols } from "./symbols.ts";
@@ -57,6 +57,12 @@ export interface TyperefEntryData extends Record<string, unknown> {
   href: string;
 }
 
+/** Markdown rendered by the site. */
+export interface RenderedContent {
+  html: string;
+  metadata?: { imagePaths?: string[] };
+}
+
 /** What the loader uses of Astro's `LoaderContext`. */
 export interface TyperefLoaderContext {
   config: { root: URL };
@@ -67,7 +73,10 @@ export interface TyperefLoaderContext {
       data: TyperefEntryData;
       body: string;
       digest: string;
-      rendered: { html: string };
+      rendered: RenderedContent;
+      /** The README's, relative to the site, for its images. */
+      filePath?: string;
+      assetImports?: string[];
     }): boolean;
     keys(): string[];
     delete(id: string): void;
@@ -76,7 +85,10 @@ export interface TyperefLoaderContext {
     id: string;
     data: TyperefEntryData;
   }): Promise<TyperefEntryData>;
-  renderMarkdown(markdown: string): Promise<{ html: string }>;
+  renderMarkdown(
+    markdown: string,
+    options: { fileURL?: URL },
+  ): Promise<RenderedContent>;
   generateDigest(data: string): string;
   logger: { info(message: string): void; error(message: string): void };
   watcher?: {
@@ -134,7 +146,8 @@ export function typerefLoader(options: TyperefLoaderOptions): TyperefLoader {
   return {
     name: "typeref",
     async load(context) {
-      const directory = resolve(fileURLToPath(context.config.root), root);
+      const site = fileURLToPath(context.config.root);
+      const directory = resolve(site, root);
       const watched = new Set<string>();
       const update = async (): Promise<void> => {
         const project = loadProject(
@@ -147,11 +160,11 @@ export function typerefLoader(options: TyperefLoaderOptions): TyperefLoader {
             )),
         );
         const pages = renderMarkdownPages(project, {
-          ...(config.categoryPages !== undefined && {
-            categoryPages: config.categoryPages,
-          }),
+          categoryPages: config.categoryPages ?? Infinity,
           urlOf: (path) => hrefOf(idOf(path)),
         });
+        // Images in the README are where it is.
+        const readme = readmePath(directory, config.readme);
         const stale = new Set(context.store.keys());
         for (const { page, markdown } of pages) {
           const id = idOf(page.url);
@@ -173,12 +186,22 @@ export function typerefLoader(options: TyperefLoaderOptions): TyperefLoader {
             JSON.stringify([markdown, data]),
           );
           if (context.store.get(id)?.digest === digest) continue;
+          const file = page.kind === "readme" ? readme : undefined;
+          const rendered = await context.renderMarkdown(
+            markdown,
+            file === undefined ? {} : { fileURL: pathToFileURL(file) },
+          );
           context.store.set({
             id,
             data,
             body: markdown,
             digest,
-            rendered: await context.renderMarkdown(markdown),
+            rendered,
+            // Astro resolves the README's images, as for its own files.
+            ...(file !== undefined && {
+              filePath: relative(site, file).split(sep).join("/"),
+              assetImports: rendered.metadata?.imagePaths ?? [],
+            }),
           });
         }
         for (const id of stale) context.store.delete(id);
