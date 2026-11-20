@@ -219,8 +219,7 @@ class MarkdownWriter {
     this.urlOf = options.urlOf;
   }
 
-  render(project: Project): MarkdownPage[] {
-    const files: MarkdownPage[] = [];
+  *render(project: Project): Generator<MarkdownPage> {
     for (const page of this.router.pages) {
       this.page = page.url;
       this.rendered.clear();
@@ -240,12 +239,11 @@ class MarkdownWriter {
               syntax,
             );
       // READMEs are written as they are; leading spaces start code there.
-      files.push({
+      yield {
         page,
         markdown: page.kind === "readme" ? markdown : `${markdown.trim()}\n`,
-      });
+      };
     }
-    return files;
   }
 
   private url(to: string): string {
@@ -831,12 +829,13 @@ export function renderMarkdown(
   project: Project,
   options: MarkdownOptions = {},
 ): Map<string, string> {
-  return new Map(
-    renderMarkdownPages(project, options).map(({ page, markdown }) => [
-      page.url,
-      markdown,
-    ]),
-  );
+  const files = new Map<string, string>();
+  for (const { page, markdown } of new MarkdownWriter(project, options).render(
+    project,
+  )) {
+    files.set(page.url, markdown);
+  }
+  return files;
 }
 
 export interface MarkdownPage {
@@ -857,5 +856,5 @@ export function renderMarkdownPages(
   project: Project,
   options: MarkdownOptions = {},
 ): MarkdownPage[] {
-  return new MarkdownWriter(project, options).render(project);
+  return [...new MarkdownWriter(project, options).render(project)];
 }
