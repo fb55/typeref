@@ -3,7 +3,8 @@
 API documentation for TypeScript libraries, read from their published
 declaration files. typeref builds an HTML site with the URLs TypeDoc uses, so
 links to existing docs keep working, or Markdown for a static site generator,
-whose routes decide the URLs.
+whose routes decide the URLs. (With `categoryPages`, members move to their
+categories' pages; links to them land on their entries in the class's index.)
 
 It reads `.d.ts` files rather than sources, so it works with any TypeScript
 version that emits them, TypeScript 7 included. Declaration maps, if the
