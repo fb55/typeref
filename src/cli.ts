@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * The command: `typeref [config]` documents the package in the current
- * directory, configured by `typeref.config.ts` (or the given file).
+ * directory, configured by `typeref.config.ts` (or the given file), or else
+ * by the `typeref` key of its `package.json`.
  *
  * @module
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -25,7 +26,11 @@ const path =
 try {
   const config =
     path === undefined
-      ? {}
+      ? ((
+          JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
+            typeref?: Config;
+          }
+        ).typeref ?? {})
       : ((await import(pathToFileURL(path).href)) as { default?: Config })
           .default;
   if (config === undefined) {
