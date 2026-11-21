@@ -97,7 +97,7 @@ input.addEventListener("keydown", (event) => {
   // Enter also ends input methods' compositions.
   if (event.key === "Enter" && !event.isComposing) {
     results.querySelector("a")?.click();
-  } else if (event.key === "ArrowDown") {
+  } else if (event.key === "ArrowDown" && !event.isComposing) {
     event.preventDefault();
     results.querySelector("a")?.focus();
   }
@@ -136,6 +136,22 @@ document.addEventListener("keydown", (event) => {
     dialog.showModal();
   }
 });
+
+// Pages of these docs that a reader points at load ahead, where browsers
+// can; other links on the site, such as an application's, do not.
+if (HTMLScriptElement.supports?.("speculationrules")) {
+  const rules = document.createElement("script");
+  rules.type = "speculationrules";
+  rules.textContent = JSON.stringify({
+    prerender: [
+      {
+        where: { href_matches: `${new URL(base, location.href).pathname}*` },
+        eagerness: "moderate",
+      },
+    ],
+  });
+  document.head.append(rules);
+}
 
 // Apple's keyboards show the shortcut with Command.
 if (/Mac|iPhone|iPad/u.test(navigator.platform)) {

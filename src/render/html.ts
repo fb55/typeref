@@ -396,16 +396,6 @@ class HtmlWriter {
                 : undefined,
               h("link", { rel: "stylesheet", href: `${base}assets/style.css` }),
               h("script", { type: "module", src: `${base}assets/main.js` }),
-              // Pages a reader points at load ahead, where browsers can.
-              h(
-                "script",
-                { type: "speculationrules" },
-                JSON.stringify({
-                  prerender: [
-                    { where: { href_matches: "/*" }, eagerness: "moderate" },
-                  ],
-                }),
-              ),
             ),
             h(
               "body",
