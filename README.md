@@ -1,4 +1,4 @@
-# typeref
+# typeref [![NPM version](https://img.shields.io/npm/v/typeref.svg)](https://npmjs.org/package/typeref) [![Node.js CI](https://github.com/fb55/typeref/actions/workflows/nodejs-test.yml/badge.svg)](https://github.com/fb55/typeref/actions/workflows/nodejs-test.yml)
 
 typeref generates API docs for TypeScript libraries from the `.d.ts` files you
 publish, as an HTML site or as Markdown. It works with TypeScript 7, and
