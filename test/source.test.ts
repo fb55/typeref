@@ -30,4 +30,13 @@ describe("Sources", () => {
       blob === undefined ? undefined : `${blob}/${revision}/src/a%20b.ts#L3`,
     );
   });
+
+  it("links no installed dependencies", () => {
+    expect(
+      new Sources().url(
+        join(import.meta.dirname, "..", "node_modules", "dep", "index.d.ts"),
+        1,
+      ),
+    ).toBeUndefined();
+  });
 });

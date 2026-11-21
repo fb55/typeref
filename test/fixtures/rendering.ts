@@ -111,3 +111,13 @@ export interface Handlers {
    */
   handle: (value: string) => boolean;
 }
+
+/**
+ * The first of a list.
+ *
+ * @returns The first item.
+ */
+export declare function first<T, R extends ArrayLike<T>>(list: R): T;
+
+/** Accepts a `function`. */
+export declare function accepts(callback: () => void): void;

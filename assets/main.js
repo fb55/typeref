@@ -74,12 +74,15 @@ async function search(query) {
         const parent = document.createElement("span");
         parent.className = "result-parent";
         parent.textContent = `${entry.parent}.`;
+        // Long qualified names break after their parent's name.
+        parent.append(document.createElement("wbr"));
         name.append(parent);
       }
       name.append(entry.name);
       const kind = document.createElement("span");
       kind.className = "result-kind";
       kind.textContent = entry.kind;
+      kind.dataset.kind = entry.kind;
       link.append(name, kind);
       item.append(link);
       return item;
@@ -94,7 +97,32 @@ input.addEventListener("keydown", (event) => {
   // Enter also ends input methods' compositions.
   if (event.key === "Enter" && !event.isComposing) {
     results.querySelector("a")?.click();
+  } else if (event.key === "ArrowDown") {
+    event.preventDefault();
+    results.querySelector("a")?.focus();
   }
+});
+// Arrow keys move between results, and back to the input from the first.
+results.addEventListener("keydown", (/** @type {KeyboardEvent} */ event) => {
+  // Typing goes on in the input.
+  if (
+    (event.key.length === 1 || event.key === "Backspace") &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  ) {
+    input.focus();
+    return;
+  }
+  if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  const links = [...results.querySelectorAll("a")];
+  const position = links.indexOf(
+    /** @type {HTMLAnchorElement} */ (event.target),
+  );
+  if (position === -1) return;
+  event.preventDefault();
+  const next = position + (event.key === "ArrowDown" ? 1 : -1);
+  (next < 0 ? input : links[Math.min(next, links.length - 1)]).focus();
 });
 dialog.addEventListener("close", () => {
   input.value = "";
@@ -109,19 +137,165 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+// Apple's keyboards show the shortcut with Command.
+if (/Mac|iPhone|iPad/u.test(navigator.platform)) {
+  const key = document.querySelector(".search-button kbd");
+  if (key) key.textContent = "⌘K";
+}
+
 /**
- * Mirrors the section in view, which CSS highlights, for assistive technology.
+ * @param {HTMLElement} element An element in a scrolling list.
+ * @param {HTMLElement} list The list.
+ * @returns The element's offset from the top of the list's content.
+ */
+function offsetIn(element, list) {
+  return element.offsetParent === list
+    ? element.offsetTop
+    : element.offsetTop - list.offsetTop;
+}
+
+/**
+ * Scrolls a list to an element, if it is not wholly in view.
+ *
+ * @param {HTMLElement} element An element in the list.
+ * @param {HTMLElement} list The list.
+ */
+function reveal(element, list) {
+  const top = offsetIn(element, list);
+  if (
+    top < list.scrollTop ||
+    top + element.offsetHeight > list.scrollTop + list.clientHeight
+  ) {
+    list.scrollTop = top - list.clientHeight / 2;
+  }
+}
+
+/**
+ * @param {string} query A media query.
+ * @param {(matches: boolean) => void} listener Called with whether it
+ *   matches, now and when that changes.
+ */
+function whenMatches(query, listener) {
+  const list = matchMedia(query);
+  listener(list.matches);
+  list.addEventListener("change", () => {
+    listener(list.matches);
+  });
+}
+
+// The navigation is a sidebar, or on narrow screens a drawer.
+const site = document.querySelector("#Site");
+const narrow = matchMedia("(width < 60rem)");
+if (site instanceof HTMLElement) {
+  /** Scrolls the navigation, not the page, to the current page's link. */
+  const showCurrent = () => {
+    const current = site.querySelector("[aria-current=page]");
+    if (current instanceof HTMLElement) reveal(current, site);
+  };
+  // The drawer is modal: the page behind it is inert while it is open.
+  const page = document.querySelectorAll(
+    "body > :not(.layout, dialog), .layout > :not(#Site)",
+  );
+  // Before closing, so focus can return to the button that opened it.
+  site.addEventListener("beforetoggle", (event) => {
+    const isOpening = event.newState === "open";
+    for (const element of page) {
+      if (element instanceof HTMLElement) element.inert = isOpening;
+    }
+  });
+  site.addEventListener("toggle", (event) => {
+    if (event.newState === "open") {
+      showCurrent();
+      site.querySelector("button")?.focus();
+    }
+  });
+  whenMatches(narrow.media, (matches) => {
+    if (!matches && site.matches(":popover-open")) site.hidePopover();
+    if (!matches) showCurrent();
+  });
+}
+
+// The table of contents is a column on wide screens, and above the page,
+// collapsed, on others.
+const contents = document.querySelector(".toc details");
+if (contents instanceof HTMLDetailsElement) {
+  const summary = contents.querySelector("summary");
+  const wide = matchMedia("(width >= 80rem)");
+  whenMatches(wide.media, (matches) => {
+    contents.open = matches;
+    // As a column, its summary is a heading, not a control.
+    if (summary) summary.tabIndex = matches ? -1 : 0;
+  });
+  summary?.addEventListener("click", (event) => {
+    if (wide.matches) event.preventDefault();
+  });
+  // Above the page, it closes once a section is chosen, or on leaving it.
+  contents.addEventListener("click", (event) => {
+    if (
+      !wide.matches &&
+      event.target instanceof Element &&
+      event.target.closest("a")
+    ) {
+      contents.open = false;
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (
+      !wide.matches &&
+      contents.open &&
+      event.target instanceof Node &&
+      !contents.contains(event.target)
+    ) {
+      contents.open = false;
+    }
+  });
+  // Keyboards leaving it close it too, so it covers nothing they reach.
+  // Clicks within it, on headings or its scrollbar, focus nothing.
+  contents.addEventListener("focusout", (event) => {
+    if (
+      !wide.matches &&
+      contents.open &&
+      event.relatedTarget instanceof Node &&
+      !contents.contains(event.relatedTarget)
+    ) {
+      contents.open = false;
+    }
+  });
+  contents.addEventListener("keydown", (event) => {
+    if (!wide.matches && event.key === "Escape") {
+      contents.open = false;
+      summary?.focus();
+    }
+  });
+}
+
+/**
+ * Mirrors the section in view, which CSS highlights, for assistive technology,
+ * and keeps it in view in the contents' list.
  */
 function syncCurrent() {
   const current = document.querySelector(".toc a:target-current");
   for (const link of document.querySelectorAll(".toc a")) {
     link.setAttribute("aria-current", String(link === current));
   }
+  const list = current?.closest(".toc-list");
+  if (
+    current instanceof HTMLElement &&
+    list instanceof HTMLElement &&
+    list.clientHeight > 0
+  ) {
+    reveal(current, list);
+  }
 }
 
 if (CSS.supports("scroll-target-group: auto")) {
-  syncCurrent();
-  document.addEventListener("scrollend", syncCurrent);
+  // The section in view updates after scrolling ends.
+  const sync = () => {
+    setTimeout(syncCurrent, 0);
+  };
+  sync();
+  document.addEventListener("scrollend", sync);
+  addEventListener("hashchange", sync);
 }
 
 export {};

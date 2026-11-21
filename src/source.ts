@@ -91,9 +91,12 @@ export class Sources {
   /**
    * @param file A file.
    * @returns A link to the file in its repository, at the checked-out
-   *   commit; `undefined` outside of repositories on GitHub or GitLab.
+   *   commit; `undefined` outside of repositories on GitHub or GitLab, and
+   *   for installed dependencies.
    */
   fileUrl(file: string): string | undefined {
+    // Installed dependencies are not in their dependents' repositories.
+    if (file.split(/[/\\]/u).includes("node_modules")) return undefined;
     const repository = this.getRepository(dirname(file));
     if (!repository) return undefined;
     const path = relative(repository.root, file)

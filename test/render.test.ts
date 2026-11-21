@@ -255,7 +255,8 @@ describe("renderHtml", () => {
   it("links the headings of members of object types to their anchors", async () => {
     const files = await renderHtml(fixture(["rendering"]));
     expect(files.get("types/Hooks.html")).toMatch(
-      /<h3 id="onerror"><a class="anchor" href="#onerror">onError<\/a>/u,
+      // CamelCase names may break between their words.
+      /<h3 class="member-name" id="onerror"><a class="anchor" href="#onerror">on<wbr>Error<\/a>/u,
     );
   });
 
@@ -285,6 +286,8 @@ describe("renderHtml", () => {
       files
         .get("interfaces/Multi/index-category.html")!
         .includes('class="toc"'),
+      // Its outline is of the categories' indexes, on the page.
+      /<nav class="toc".*?<\/nav>/u.exec(index)?.[0].match(/href="[^"]*"/gu),
       index,
       // Old links to members find them in the index, once.
       index.match(/id="both"/gu)?.length,
@@ -292,11 +295,31 @@ describe("renderHtml", () => {
       expect.stringContaining('<p class="also"><a href="a.html#both">'),
       1,
       false,
-      expect.stringMatching(
-        /aria-label="Members">.*<li><a href="Multi\/a.html#both">both<\/a><\/li>/u,
-      ),
+      ['href="#a"', 'href="#b"', 'href="#index"', 'href="#other"'],
+      expect.stringContaining('<h2 id="a"><a href="Multi/a.html">A</a></h2>'),
       1,
     ]);
+  });
+
+  it("closes the type arguments of type parameters' constraints", async () => {
+    const files = await renderHtml(fixture(["rendering"]));
+    expect(files.get("functions/first.html")).toMatch(
+      /ArrayLike<\/a>&#x3C;<span class="n">T<\/span>><\/code><\/dt>/u,
+    );
+  });
+
+  it("sets what functions return apart from what follows", async () => {
+    const files = await renderHtml(fixture(["rendering"]));
+    expect(files.get("functions/first.html")).toContain(
+      '<p class="returns"><code><span class="n">T</span></code></p><div class="returns-description"><p>The first item.</p></div>',
+    );
+  });
+
+  it("keeps summaries' inline code within their sentences", async () => {
+    const files = await renderHtml(fixture(["rendering"]));
+    expect(files.get("index.html")).toContain(
+      "<dd>Accepts a <code>function</code>.</dd>",
+    );
   });
 
   it("documents a member of several categories once", async () => {
@@ -448,7 +471,7 @@ describe("renderHtml", () => {
     const page = files.get("classes/Derived.html")!;
     expect(page).toContain('<span class="k">extends</span>');
     expect(page).toContain(
-      '<a class="n" href="Base.html">Base</a>&#x3C;<span class="k">string</span>>',
+      '<a class="n" href="Base.html">Base</a>&#x3C;<span class="t">string</span>>',
     );
   });
 });

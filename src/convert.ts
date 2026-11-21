@@ -456,8 +456,15 @@ function relativizeSources(modules: Module[]): void {
       base = dirname(base);
     }
   }
+  const dependencies = `${sep}node_modules${sep}`;
   for (const source of all) {
-    source.file = relative(base, source.file).replaceAll("\\", "/");
+    // Dependencies' files are named within their packages.
+    const index = source.file.lastIndexOf(dependencies);
+    source.file = (
+      index === -1
+        ? relative(base, source.file)
+        : source.file.slice(index + dependencies.length)
+    ).replaceAll("\\", "/");
   }
 }
 
