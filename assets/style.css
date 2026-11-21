@@ -4,16 +4,20 @@
   --muted: light-dark(#59636e, #9198a1);
   --background: light-dark(#fff, #0d1117);
   --surface: light-dark(#f6f8fa, #151b23);
+  /* Controls' edges; dividers and code boxes use the subtler one. */
   --border: light-dark(#d1d9e0, #3d444d);
+  --border-subtle: light-dark(#e1e6eb, #262c36);
   --accent: light-dark(#0969da, #4493f8);
   --keyword: light-dark(#cf222e, #ff7b72);
+  --type: light-dark(#0550ae, #79c0ff);
   --name: light-dark(#8250df, #d2a8ff);
   --literal: light-dark(#0a3069, #a5d6ff);
   --parameter: light-dark(#953800, #ffa657);
-  --deprecated: light-dark(#9a6700, #d29922);
+  --green: light-dark(#1a7f37, #3fb950);
   --font: system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --header-height: 3.25rem;
+  --max-width: 86rem;
 
   accent-color: var(--accent);
 }
@@ -24,6 +28,9 @@
 
 html {
   scroll-padding-top: calc(var(--header-height) + 1rem);
+  /* Phones in landscape keep the text's size. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -39,28 +46,50 @@ a {
   text-underline-offset: 0.15em;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 code,
-kbd,
-pre {
+kbd {
   font-family: var(--mono);
   font-size: 0.875em;
 }
 
 :not(pre) > code {
-  padding: 0.1em 0.35em;
+  padding: 0.1em 0.25em;
   border-radius: 0.3em;
   background: var(--surface);
 }
 
-/* Long lines wrap: Safari cannot scroll code by keyboard. */
 pre {
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  margin: 0.75rem 0;
   padding: 0.85rem 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: 0.5rem;
   background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.875rem;
   line-height: 1.5;
+}
+
+pre code {
+  font-size: inherit;
+}
+
+/* Examples keep their lines and indentation, and scroll. */
+pre:not(.signature) {
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Signatures wrap, continuing lines indented under their start. */
+pre.signature {
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  padding-inline-start: calc(1rem + 2ch);
+  text-indent: -2ch;
 }
 
 /* Highlighting, with both themes' colors as custom properties. */
@@ -73,51 +102,92 @@ pre {
   background: var(--surface);
 }
 
-.signature .k {
+code .k {
   color: var(--keyword);
 }
 
-.signature .n {
+code .t {
+  color: var(--type);
+}
+
+code .n {
   color: var(--name);
 }
 
-.signature .l {
+code .l {
   color: var(--literal);
 }
 
-.signature .p {
+code .p {
   color: var(--parameter);
+}
+
+main h2 > a {
+  color: inherit;
+}
+
+/* Types link quietly; their underline darkens on hover. */
+code a,
+h2 > a,
+dl.index dt a {
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+code a:hover,
+h2 > a:hover,
+dl.index dt a:hover {
+  text-decoration-color: currentColor;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 .skip {
   position: absolute;
   left: 0.5rem;
-  top: -3rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  background: var(--background);
 }
 
 .skip:focus {
   top: 0.5rem;
-  z-index: 2;
 }
 
+/* The header's content aligns with the layout's. */
 .top {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem 0.75rem;
   height: var(--header-height);
-  padding: 0 1rem;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--background) 85%, transparent);
-  backdrop-filter: blur(8px);
+  padding-inline: max(1rem, (100% - var(--max-width)) / 2 + 1rem);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--background);
 }
 
 .project {
+  min-width: 0;
+  overflow: hidden;
   color: var(--text);
   font-weight: 600;
   text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .version {
@@ -126,15 +196,57 @@ pre {
   font-size: 0.875em;
 }
 
-.search-button {
-  margin-left: auto;
-  padding: 0.35rem 0.75rem;
+.site-title {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* Zoomed text keeps the project's name readable; the drawer has the version. */
+@media (width < 30rem) {
+  .top .version {
+    display: none;
+  }
+}
+
+.top button,
+.site .close-button,
+.search-bar button {
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--text);
   font: inherit;
+  font-size: 0.875rem;
   cursor: pointer;
+}
+
+.top button:hover,
+.site .close-button:hover,
+.search-bar button:hover {
+  border-color: var(--muted);
+}
+
+.search-button {
+  margin-left: auto;
+}
+
+/* Where there is room, search looks like the field it opens. */
+@media (width >= 40rem) {
+  .search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 12rem;
+    color: var(--muted);
+  }
+}
+
+.search-button kbd {
+  margin-left: 0.25rem;
+  color: var(--muted);
 }
 
 kbd {
@@ -143,41 +255,76 @@ kbd {
   border-radius: 0.25em;
 }
 
+/* Touch keyboards have no shortcuts, and phones no room for them. */
+@media (width < 40rem), (pointer: coarse) {
+  .search-button kbd {
+    display: none;
+  }
+}
+
+/*
+ * Narrow: the page, with its contents collapsed above it, and the
+ * navigation in a drawer. Medium: the navigation beside them. Wide: the
+ * contents in a column of their own.
+ */
 .layout {
   display: grid;
-  grid-template-areas: "main" "toc" "site";
-  gap: 2rem;
-  max-width: 90rem;
+  grid-template-areas: "main";
+  column-gap: 2.5rem;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
+  /* At the page's end, sticky columns keep their place under the header. */
+  padding: 1.5rem 1rem 0;
 }
 
 main {
   grid-area: main;
   min-width: 0;
+  padding-bottom: 4rem;
+  container-type: inline-size;
   /* Long names break rather than widen the page. */
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 main:focus {
   outline: none;
 }
 
-.site {
-  grid-area: site;
+/* Reading lines stay short however wide the page is. */
+main :is(p, li, dd, blockquote) {
+  max-inline-size: 72ch;
 }
 
+/* Above the page, the contents stay in reach under the header. */
 .toc {
-  grid-area: toc;
+  grid-area: main;
+  align-self: start;
+  position: sticky;
+  top: var(--header-height);
+  z-index: 1;
+  margin-inline: -1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--background);
+}
+
+.layout:has(> .toc) {
+  padding-top: 0;
+}
+
+.toc + main {
+  margin-top: 4.25rem;
+}
+
+html:has(.toc) {
+  scroll-padding-top: calc(var(--header-height) + 3.5rem);
 }
 
 .site,
 .toc {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .site h2,
-.toc h2,
 .toc h3 {
   margin: 1.25rem 0 0.35rem;
   color: var(--muted);
@@ -190,24 +337,26 @@ main:focus {
 .toc ul {
   margin: 0;
   padding: 0;
+  border-inline-start: 1px solid var(--border-subtle);
   list-style: none;
-}
-
-.site a,
-.toc a {
-  display: block;
-  overflow: hidden;
-  padding: 0.1rem 0.5rem;
-  border-left: 2px solid transparent;
-  color: var(--text);
-  text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Pages of categories, under their class. */
 .site ul ul {
   padding-inline-start: 0.75rem;
+  border: 0;
+}
+
+.site a,
+.toc a {
+  display: block;
+  margin-inline-start: -1px;
+  padding: 0.2rem 0.75rem;
+  border-inline-start: 2px solid transparent;
+  color: var(--text);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  text-decoration: none;
 }
 
 .site a:hover,
@@ -215,12 +364,25 @@ main:focus {
   color: var(--accent);
 }
 
-/* A class is current on the pages of its categories, too. */
-.site a[aria-current],
-.toc a[aria-current="true"] {
-  border-left-color: var(--accent);
+.site a:focus-visible,
+.toc a:focus-visible,
+.results a:focus-visible {
+  outline-offset: -2px;
+}
+
+.site a[aria-current="page"] {
+  border-inline-start-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* A class, on the pages of its categories. */
+.site a[aria-current="true"] {
+  font-weight: 600;
+}
+
+.site a.deprecated {
+  text-decoration: line-through;
 }
 
 /* The section in view, where browsers track it. */
@@ -230,62 +392,276 @@ main:focus {
   }
 
   .toc a:target-current {
-    border-left-color: var(--accent);
+    border-inline-start-color: var(--accent);
     color: var(--accent);
     font-weight: 600;
   }
 }
 
-@media (width >= 64rem) {
-  .layout {
-    grid-template-areas: "site main toc";
-    grid-template-columns: 15rem minmax(0, 1fr) 13rem;
+.toc summary {
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Open, it lies over the page. */
+.toc:has(details[open]) {
+  box-shadow: 0 0.75rem 1.5rem light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 45%));
+}
+
+.toc-list {
+  max-height: calc(100dvh - var(--header-height) - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1rem 0.75rem;
+}
+
+.toc-list h3:first-child {
+  margin-top: 0.25rem;
+}
+
+/* The navigation, in a drawer from the start edge. */
+.menu-button {
+  margin-inline-start: -0.25rem;
+}
+
+.site {
+  inset: 0 auto 0 0;
+  width: min(20rem, 100% - 3rem);
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0.75rem 1.25rem 2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-inline-end: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text);
+}
+
+.site::backdrop {
+  background: rgb(0 0 0 / 40%);
+}
+
+/* Close stays in reach as the drawer scrolls, on a bar of its own. */
+.site {
+  padding-top: 0;
+}
+
+.site-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 -1.25rem 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--background);
+}
+
+/* Touch targets. */
+@media (width < 60rem), (pointer: coarse) {
+  .site a,
+  .toc a {
+    padding-block: 0.45rem;
   }
 
-  .site,
-  .toc {
-    position: sticky;
-    top: calc(var(--header-height) + 1.5rem);
-    align-self: start;
-    max-height: calc(100dvh - var(--header-height) - 3rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  .top button,
+  .site .close-button,
+  .search-bar button {
+    min-height: 2.5rem;
   }
 
-  .site h2:first-child,
-  .toc h2:first-child {
-    margin-top: 0;
+  .results a {
+    padding-block: 0.55rem;
   }
 }
 
-@media (40rem <= width < 64rem) {
+/* It slides in; closing, or a resize past the breakpoint, is instant. */
+@media (width < 60rem) and (prefers-reduced-motion: no-preference) {
+  .site:popover-open {
+    transition: translate 0.2s ease-out;
+  }
+
+  @starting-style {
+    .site:popover-open {
+      translate: -100% 0;
+    }
+  }
+}
+
+@media (width >= 60rem) {
   .layout {
     grid-template-areas: "site main";
-    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-columns: 14rem minmax(0, 1fr);
   }
 
   .toc {
+    margin-inline: 0;
+  }
+
+  .toc summary {
+    padding-inline: 0;
+  }
+
+  /* Open, the contents are a panel beside the page's text. */
+  .toc-list {
+    position: absolute;
+    top: 100%;
+    left: -0.75rem;
+    width: min(24rem, 100% + 1.5rem);
+    padding: 0.5rem 0.75rem 0.75rem;
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 0.5rem 0.5rem;
+    background: var(--background);
+    box-shadow: 0 0.75rem 1.5rem light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 45%));
+  }
+
+  .toc:has(details[open]) {
+    box-shadow: none;
+  }
+
+  .menu-button,
+  .site-bar {
     display: none;
+  }
+
+  /* The drawer, as a sidebar: undoing popovers' styles. */
+  .site {
+    grid-area: site;
+    display: block;
+    position: sticky;
+    inset: auto;
+    top: calc(var(--header-height) + 1.5rem);
+    align-self: start;
+    width: auto;
+    height: auto;
+    max-height: calc(100dvh - var(--header-height) - 3rem);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    scrollbar-width: thin;
   }
 }
 
-h1,
-h2,
-h3,
-h4 {
-  line-height: 1.25;
+/* Short screens keep the header only; the contents, in a row of their own
+   above the page, scroll away. */
+@media (height < 30rem) and (width < 80rem) {
+  .layout {
+    grid-template-areas: "toc" "main";
+  }
+
+  .toc {
+    grid-area: toc;
+    position: static;
+  }
+
+  .toc + main {
+    margin-top: 1.5rem;
+  }
+
+  .toc:has(details[open]) {
+    box-shadow: none;
+  }
+
+  .toc-list {
+    position: static;
+    width: auto;
+    max-height: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  html:has(.toc) {
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+  }
+}
+
+@media (height < 30rem) and (60rem <= width < 80rem) {
+  .layout {
+    grid-template-areas: "site toc" "site main";
+    grid-template-rows: auto 1fr;
+  }
+
+  .toc-list {
+    padding-inline: 0;
+  }
+}
+
+@media (width >= 80rem) {
+  .layout,
+  .layout:has(> .toc) {
+    grid-template-areas: "site main toc";
+    grid-template-columns: 15rem minmax(0, 1fr) 13rem;
+    padding-top: 1.5rem;
+  }
+
+  html:has(.toc) {
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+  }
+
+  .toc,
+  .toc:has(details[open]) {
+    grid-area: toc;
+    top: calc(var(--header-height) + 1.5rem);
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .toc + main {
+    margin-top: 0;
+  }
+
+  /* The contents, as a column: always open, titled by their summary. */
+  .toc details::details-content {
+    content-visibility: visible;
+  }
+
+  .toc summary {
+    margin-bottom: 0.5rem;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8125rem;
+    cursor: default;
+  }
+
+  .toc summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .toc-list h3:first-child {
+    margin-top: 0;
+  }
+
+  .toc-list {
+    position: static;
+    width: auto;
+    max-height: calc(100dvh - var(--header-height) - 5rem);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    scrollbar-width: thin;
+  }
 }
 
 h1 {
   margin: 0;
-  font-size: 2rem;
-  overflow-wrap: anywhere;
+  font-size: clamp(1.5rem, 1rem + 2.5vw, 2rem);
 }
 
 main h2 {
-  margin-top: 2.5rem;
+  margin: 2.5rem 0 0.5rem;
   padding-bottom: 0.3rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 1.5rem;
 }
 
 .page-header {
@@ -309,36 +685,68 @@ main h2 {
   border: 1px solid var(--border);
   border-radius: 1em;
   color: var(--muted);
+  font-family: var(--font);
   font-size: 0.75rem;
   font-weight: 400;
   vertical-align: middle;
 }
 
 .source {
-  margin-top: -0.5rem;
+  margin: 0 0 1rem;
   color: var(--muted);
   font-size: 0.8rem;
 }
 
-.source a {
-  color: inherit;
+.source a,
+.source-link {
+  color: var(--muted);
 }
 
+/* Members: one rule between each, their name and source on one row. */
 .member {
-  margin: 1.5rem 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
+  padding-block: 1.75rem;
+}
+
+.member + .member {
+  border-top: 1px solid var(--border-subtle);
 }
 
 .member:focus {
   outline: none;
 }
 
-.member > h3 {
-  margin: 0.5rem 0;
+.member > :last-child,
+.signature-block > :last-child {
+  margin-bottom: 0;
+}
+
+.member-header + pre,
+.signature-block > pre:first-child {
+  margin-top: 0;
+}
+
+.member-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.member-name {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   font-family: var(--mono);
-  font-size: 1.1rem;
-  overflow-wrap: anywhere;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.source-link {
+  min-width: 0;
+  font-size: 0.8rem;
 }
 
 .anchor {
@@ -347,42 +755,90 @@ main h2 {
 }
 
 .anchor:hover {
-  text-decoration: underline;
+  color: var(--accent);
 }
 
-.deprecated > h3 .anchor,
-dt.deprecated a,
-.site a.deprecated {
+/* Where a link to the member lands. */
+.member-name:target .anchor {
+  color: var(--accent);
+}
+
+.deprecated > .member-header .anchor,
+dt.deprecated a {
   text-decoration: line-through;
 }
 
+/* Overloads, one after another. */
 .signature-block + .signature-block {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-subtle);
 }
 
-.tag-title,
-.member h4,
-.member h5 {
-  margin: 1rem 0 0.25rem;
+/* Parameters, returns and tags within a signature or member. */
+.detail-title {
+  margin: 1.25rem 0 0.4rem;
+  padding: 0;
+  border: 0;
+  font-family: var(--font);
   font-size: 0.95rem;
+  font-weight: 600;
 }
 
-dl.index,
+.detail-title + p {
+  margin-top: 0;
+}
+
+/* Parameters: each over its description, as types can be long. */
 dl.parameters {
-  display: grid;
-  grid-template-columns: minmax(auto, max-content) 1fr;
-  gap: 0.35rem 1.5rem;
   margin: 0.5rem 0;
 }
 
-dl.index dt,
+/* Wrapped types indent under their name. */
 dl.parameters dt {
-  overflow-wrap: anywhere;
+  margin-top: 0.75rem;
+  padding-inline-start: 1rem;
+  text-indent: -1rem;
 }
 
-dl.index dd,
+dl.parameters dt:first-child {
+  margin-top: 0;
+}
+
+.returns {
+  margin: 0.4rem 0 0;
+}
+
+.returns-description {
+  margin: 0.2rem 0 0 1rem;
+}
+
+.returns-description > :first-child {
+  margin-top: 0;
+}
+
+.returns-description > :last-child {
+  margin-bottom: 0;
+}
+
+dl.parameters dt > code,
+.returns > code,
+.relation > code,
+dl.index dt code {
+  padding: 0;
+  background: none;
+}
+
+dl.parameters dt > code > :first-child {
+  font-weight: 600;
+}
+
 dl.parameters dd {
-  margin: 0;
+  margin: 0.2rem 0 0 1rem;
+}
+
+dd:empty {
+  display: none;
 }
 
 dd > p:first-child {
@@ -393,16 +849,77 @@ dd > p:last-child {
   margin-bottom: 0;
 }
 
-@media (width < 40rem) {
-  dl.index,
-  dl.parameters {
-    grid-template-columns: 1fr;
+/* Indexes: names beside summaries where there is room, aligned throughout. */
+dl.index {
+  display: grid;
+  /* Long names wrap rather than widen the page. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 1.5rem;
+  margin: 0.75rem 0;
+}
+
+/* Stacked, entries are apart whether or not they have summaries. */
+dl.index dt:not(:first-child) {
+  margin-top: 0.75rem;
+}
+
+dl.index dd {
+  margin: 0.15rem 0 0 1rem;
+}
+
+@container (inline-size >= 36rem) {
+  dl.index {
+    grid-template-columns: fit-content(20rem) minmax(0, 1fr);
+    row-gap: 0.6rem;
   }
 
-  dl.index dd,
-  dl.parameters dd {
-    margin: 0 0 0.75rem 1rem;
+  /* Short names align across sections; long ones widen theirs. */
+  dl.index dt {
+    grid-column: 1;
+    min-width: 12rem;
   }
+
+  dl.index dt:not(:first-child) {
+    margin-top: 0;
+  }
+
+  dl.index dd {
+    grid-column: 2;
+    margin: 0;
+  }
+}
+
+/* A module's README, after its index. */
+section.readme {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+section.readme h1 {
+  font-size: 1.5rem;
+}
+
+hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+blockquote {
+  margin: 1rem 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--border);
+  color: var(--muted);
+}
+
+main h3:not(.member-name, .detail-title) {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+main li + li {
+  margin-top: 0.25rem;
 }
 
 ul.types {
@@ -426,7 +943,12 @@ table {
 th,
 td {
   padding: 0.35rem 0.75rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
+  text-align: start;
+}
+
+th {
+  background: var(--surface);
 }
 
 img {
@@ -435,14 +957,28 @@ img {
 
 /* Layout IDs are capitalized: slugs, being lowercase, never take them. */
 #Search {
-  width: min(40rem, 100vw - 2rem);
+  width: min(40rem, 100% - 2rem);
   max-height: min(32rem, 100dvh - 4rem);
-  margin-top: 4rem;
+  margin: 4rem auto auto;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   background: var(--background);
   color: var(--text);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 25%);
+}
+
+/* The input stays in place while the results scroll. */
+#Search[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (width < 40rem) {
+  #Search {
+    max-height: min(32rem, 100dvh - 1.5rem);
+    margin-top: clamp(0.75rem, 6dvh, 4rem);
+  }
 }
 
 #Search:modal {
@@ -455,63 +991,405 @@ img {
   background: rgb(0 0 0 / 40%);
 }
 
-#Search input {
-  width: 100%;
-  padding: 0.85rem 1rem;
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The bar shows the input's focus. */
+.search-bar:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+.search-bar input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0;
   border: 0;
-  border-bottom: 1px solid var(--muted);
   background: transparent;
   color: inherit;
   font: inherit;
+  outline: none;
 }
 
-.search-bar {
-  display: flex;
-  justify-content: end;
-  padding: 0.5rem 0.5rem 0;
-}
-
-.search-bar button {
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  background: var(--surface);
-  color: inherit;
-  font: inherit;
+.search-bar form {
+  margin: 0;
 }
 
 .results {
+  flex: 1;
   margin: 0;
   padding: 0.5rem;
+  overflow-y: auto;
   list-style: none;
+}
+
+.results:empty {
+  display: none;
+}
+
+.results li:not(:has(a)) {
+  padding: 0.4rem 0.6rem;
+  color: var(--muted);
 }
 
 .results a {
   display: flex;
   gap: 0.75rem;
   align-items: baseline;
+  line-height: 1.35;
   padding: 0.4rem 0.6rem;
   border-radius: 0.4rem;
   color: var(--text);
   text-decoration: none;
 }
 
+/* Enter in the input opens the first result. */
 .results a:is(:hover, :focus-visible),
-.results li:first-child a {
+#Search:has(input:focus) .results li:first-child a {
   background: var(--surface);
 }
 
-/* Qualified names wrap within narrow dialogs. */
+/* Qualified names wrap within narrow dialogs, after their dots. */
 .results a > :first-child {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .results .result-kind {
+  flex-shrink: 0;
   margin-left: auto;
+  white-space: nowrap;
   color: var(--muted);
   font-size: 0.8rem;
 }
 
 .results .result-parent {
   color: var(--muted);
+}
+
+/*
+ * Motion and color: small touches, each with a job. Movement is only for
+ * those who have not asked for less; fades of color are for everyone.
+ */
+
+/* Pages change in place: the header and navigation stay, the page fades in. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  .top {
+    view-transition-name: top;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (width >= 60rem) {
+  .site {
+    view-transition-name: site;
+  }
+}
+
+/* The contents bar holds still under the header, too. */
+@media (prefers-reduced-motion: no-preference) and (width < 80rem) {
+  .toc {
+    view-transition-name: toc;
+  }
+}
+
+::view-transition-old(root) {
+  animation: 0.12s ease-out both fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 0.22s ease-out both page-in;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 0.4rem;
+  }
+}
+
+/* A thread of the syntax colors along the top. */
+.top::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  block-size: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    var(--name) 55%,
+    light-dark(#fb8f44, #ffa657)
+  );
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* What a page documents, marked in the color its names have in code. */
+[data-kind] {
+  --kind: var(--accent);
+}
+
+[data-kind="Class"] {
+  --kind: var(--name);
+}
+
+:is([data-kind="Interface"], [data-kind="Type Alias"]) {
+  --kind: var(--type);
+}
+
+:is([data-kind="Function"], [data-kind="Method"], [data-kind="Constructor"]) {
+  --kind: var(--parameter);
+}
+
+:is([data-kind="Variable"], [data-kind="Property"], [data-kind="Accessor"]) {
+  --kind: var(--green);
+}
+
+:is([data-kind="Enumeration"], [data-kind="Enumeration Member"]) {
+  --kind: var(--keyword);
+}
+
+.kind[data-kind]::before,
+.result-kind[data-kind]::before {
+  content: "";
+  display: inline-block;
+  inline-size: 0.5em;
+  block-size: 0.5em;
+  margin-inline-end: 0.4em;
+  border-radius: 50%;
+  background: var(--kind);
+  vertical-align: 0.1em;
+}
+
+/* Arriving at a member, it glows briefly, a little wider than its text. */
+.member:has(> .member-header > .member-name:target) {
+  animation: arrive 2s ease-out;
+}
+
+/* Its glow lands clear of the sticky bars above it. */
+.member-name {
+  scroll-margin-top: 1.25rem;
+}
+
+@keyframes arrive {
+  from,
+  30% {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    box-shadow:
+      calc(-1 * var(--bleed)) 0
+        color-mix(in srgb, var(--accent) 10%, transparent),
+      var(--bleed) 0 color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+
+/* The glow reaches the screen's edges on phones. */
+.member {
+  --bleed: 0.75rem;
+}
+
+@media (width < 60rem) {
+  .member {
+    --bleed: 1rem;
+  }
+}
+
+/* Members' links show themselves on hover, in the margin before the name,
+   taking no room from what follows. */
+.member-name {
+  position: relative;
+}
+
+.member-name .anchor::before {
+  content: "#" / "";
+  position: absolute;
+  inset-inline-end: 100%;
+  padding-inline-end: 0.3em;
+  color: var(--muted);
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.anchor:focus-visible::before {
+  opacity: 1;
+}
+
+/* Hovered, where pointers hover and the margin has room for it. */
+@media (hover: hover) and (width >= 60rem) {
+  .member-header:hover .anchor::before {
+    opacity: 1;
+  }
+}
+
+/* On phones, its focus mark stays within the screen. */
+@media (width < 60rem) {
+  .member-name .anchor::before {
+    display: none;
+  }
+}
+
+/* Links, rails and buttons respond softly. */
+a {
+  transition:
+    color 0.15s,
+    text-decoration-color 0.15s;
+}
+
+.site a,
+.toc a {
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.site a:not([aria-current="page"]):hover,
+.toc a:not([aria-current="true"]):hover {
+  border-inline-start-color: var(--border);
+}
+
+@supports (scroll-target-group: auto) {
+  .toc a:target-current:hover {
+    border-inline-start-color: var(--accent);
+  }
+}
+
+.top button,
+.site .close-button,
+.search-bar button {
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .top button,
+  .site .close-button,
+  .search-bar button {
+    transition:
+      border-color 0.15s,
+      background-color 0.15s,
+      scale 0.1s;
+  }
+
+  .top button:active,
+  .site .close-button:active,
+  .search-bar button:active {
+    scale: 0.97;
+  }
+}
+
+/* Search opens with a fade, and a little drop where motion is welcome. */
+#Search[open] {
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+}
+
+@starting-style {
+  #Search[open] {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #Search[open] {
+    translate: 0 0;
+    transition:
+      opacity 0.15s ease-out,
+      translate 0.2s ease-out;
+  }
+
+  @starting-style {
+    #Search[open] {
+      translate: 0 -0.5rem;
+    }
+  }
+}
+
+/* Backdrops darken gradually. */
+#Search::backdrop,
+.site::backdrop {
+  transition: background-color 0.2s;
+}
+
+@starting-style {
+  #Search[open]::backdrop,
+  .site:popover-open::backdrop {
+    background-color: transparent;
+  }
+}
+
+/* Collapsed contents fade open. */
+@media (width < 80rem) {
+  .toc details::details-content {
+    opacity: 0;
+    transition:
+      opacity 0.15s ease-out,
+      content-visibility 0.15s;
+    transition-behavior: allow-discrete;
+  }
+
+  .toc details[open]::details-content {
+    opacity: 1;
+  }
+}
+
+/* A slim chevron, turning as the contents open. */
+.toc summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  list-style: none;
+}
+
+.toc summary::-webkit-details-marker {
+  display: none;
+}
+
+.toc summary::before {
+  content: "";
+  inline-size: 0.4em;
+  block-size: 0.4em;
+  border-block-end: 1.5px solid currentColor;
+  border-inline-end: 1.5px solid currentColor;
+  rotate: -45deg;
+}
+
+.toc details[open] > summary::before {
+  rotate: 45deg;
+}
+
+.toc summary:dir(rtl)::before {
+  rotate: 135deg;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toc summary::before {
+    transition: rotate 0.15s ease-out;
+  }
+}
+
+/* As a column, the contents need no control. */
+@media (width >= 80rem) {
+  .toc summary::before {
+    display: none;
+  }
 }

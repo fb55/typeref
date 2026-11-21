@@ -15,7 +15,13 @@ import type {
 } from "../model.ts";
 
 export interface Token {
-  kind: "punctuation" | "keyword" | "name" | "literal" | "parameter";
+  kind:
+    | "punctuation"
+    | "keyword"
+    | "intrinsic"
+    | "name"
+    | "literal"
+    | "parameter";
   text: string;
   target?: Target;
 }
@@ -123,7 +129,7 @@ export class TypePrinter {
     if (isWrapped) this.punctuation("(");
     switch (type.type) {
       case "intrinsic": {
-        this.keyword(type.name);
+        this.tokens.push({ kind: "intrinsic", text: type.name });
         break;
       }
       case "literal": {
@@ -280,19 +286,29 @@ export class TypePrinter {
     if (parameters === undefined || parameters.length === 0) return this;
     this.punctuation("<");
     this.list(parameters, (parameter) => {
-      for (const modifier of parameter.modifiers ?? []) {
-        this.keyword(modifier).punctuation(" ");
-      }
-      this.name(parameter.name);
-      if (isFull && parameter.constraint) {
-        this.punctuation(" ").keyword("extends").punctuation(" ");
-        this.type(parameter.constraint);
-      }
-      if (isFull && parameter.default) {
-        this.punctuation(" = ").type(parameter.default);
-      }
+      this.typeParameter(parameter, isFull);
     });
     return this.punctuation(">");
+  }
+
+  /**
+   * @param parameter A type parameter.
+   * @param isFull Whether to print its constraint and default.
+   * @returns The printer, with the parameter: `in T extends U = V`.
+   */
+  typeParameter(parameter: TypeParameter, isFull = false): this {
+    for (const modifier of parameter.modifiers ?? []) {
+      this.keyword(modifier).punctuation(" ");
+    }
+    this.name(parameter.name);
+    if (isFull && parameter.constraint) {
+      this.punctuation(" ").keyword("extends").punctuation(" ");
+      this.type(parameter.constraint);
+    }
+    if (isFull && parameter.default) {
+      this.punctuation(" = ").type(parameter.default);
+    }
+    return this;
   }
 
   /**

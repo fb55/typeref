@@ -91,7 +91,12 @@ function pageHeading(declaration: Declaration): Result {
   ].filter((badge) => typeof badge === "string");
   return h(
     "header.page-header",
-    h("p.kind", kindNames[declaration.kind]),
+    h(
+      "p.kind",
+      { "data-kind": kindNames[declaration.kind] },
+      kindNames[declaration.kind],
+      badges.flatMap((badge) => [" ", h("span.badge", badge)]),
+    ),
     h(
       "h1",
       declaration.name,
@@ -103,8 +108,52 @@ function pageHeading(declaration: Declaration): Result {
           )
         : undefined,
     ),
-    badges.flatMap((badge) => [" ", h("span.badge", badge)]),
   );
+}
+
+/**
+ * @param sources A member's sources.
+ * @returns A link to the first, for the member's heading row.
+ */
+function sourceLink(sources: Source[] | undefined): Result | undefined {
+  if (sources === undefined || sources.length === 0) return undefined;
+  const [source] = sources;
+  const label = `${source.file}:${source.line}`;
+  return source.url === undefined
+    ? h("span.source-link", label)
+    : h(
+        "a.source-link",
+        { href: source.url, "aria-label": `Source: ${label}` },
+        label,
+      );
+}
+
+/**
+ * Keeps the navigation's scroll position from page to page of a site: run
+ * right after it, so pages show it in place from their first frame.
+ */
+const restoreNavigation = `try {
+  const site = document.getElementById("Site");
+  const key = "typeref:nav:" + new URL(document.body.dataset.base, location.href).pathname;
+  const restore = () => {
+    site.scrollTop = Number(sessionStorage.getItem(key));
+  };
+  restore();
+  // Prerendered pages run this early: again when they are shown.
+  if (document.prerendering) {
+    document.addEventListener("prerenderingchange", restore, { once: true });
+  }
+  addEventListener("pagehide", () => sessionStorage.setItem(key, String(site.scrollTop)));
+} catch {}`;
+
+/**
+ * @param name A name, such as `getDocumentTypeNodeName` or `parse5-sax-parser`.
+ * @returns It, able to break between its words in narrow columns.
+ */
+function breakable(name: string): (Result | string)[] {
+  return name
+    .split(/(?<=[a-z\d])(?=[A-Z])|(?<=[._-])(?=.)/u)
+    .flatMap((part, index) => (index === 0 ? [part] : [h("wbr"), part]));
 }
 
 export interface HtmlOptions {
@@ -123,6 +172,8 @@ class HtmlWriter {
   private page = "";
   /** The members documented on the current page. */
   private readonly rendered = new Set<Declaration>();
+  /** The IDs of the sections' headings on the current page. */
+  private readonly sectionAnchors = new Map<string, string>();
 
   constructor(
     project: Project,
@@ -148,9 +199,11 @@ class HtmlWriter {
                 defaultColor: false,
               }).children
             : [];
-          return child?.type === "element"
-            ? child
-            : defaultHandlers.code(state, node);
+          if (child?.type === "element") return child;
+          // Code scrolls, in a region keyboards can reach, as Shiki's does.
+          const pre = defaultHandlers.code(state, node);
+          pre.properties.tabIndex = 0;
+          return pre;
         },
         // Wide tables scroll in a region keyboards can reach (Safari's cannot).
         table: (state, node) =>
@@ -183,6 +236,7 @@ class HtmlWriter {
     for (const page of this.router.pages) {
       this.page = page.url;
       this.rendered.clear();
+      this.sectionAnchors.clear();
       let title: string;
       let content: Result;
       if (page.kind === "readme") {
@@ -260,13 +314,20 @@ class HtmlWriter {
   }
 
   private inlineText(parts: Part[] | undefined): Child {
-    return toHast(
+    const tree = toHast(
       {
         type: "root",
         children: inlineMarkdown(parts ?? [], (target) => this.link(target)),
       },
       this.markdown,
     );
+    // Roots' children are joined by line breaks, which are spaces inline.
+    if (tree.type === "root") {
+      tree.children = tree.children.filter(
+        (child) => child.type !== "text" || child.value !== "\n",
+      );
+    }
+    return tree;
   }
 
   private tokens(list: Token[]): (Result | string)[] {
@@ -275,6 +336,7 @@ class HtmlWriter {
       const url = token.target && this.link(token.target);
       const className = {
         keyword: "k",
+        intrinsic: "t",
         name: "n",
         literal: "l",
         parameter: "p",
@@ -341,6 +403,12 @@ class HtmlWriter {
               h("a.skip", { href: "#Main" }, "Skip to content"),
               h(
                 "header.top",
+                // Narrow screens show the site's navigation on demand.
+                h(
+                  "button.menu-button",
+                  { type: "button", popovertarget: "Site" },
+                  "Menu",
+                ),
                 h(
                   "a.project",
                   { href: this.url(this.router.pages[0].url) },
@@ -364,25 +432,53 @@ class HtmlWriter {
               ),
               h(
                 "div.layout",
-                h("main#Main", { tabindex: "-1" }, content),
+                h(
+                  "nav#Site.site",
+                  { "aria-label": "API", popover: "auto" },
+                  h(
+                    "div.site-bar",
+                    h(
+                      "span.site-title",
+                      project.name,
+                      project.version !== undefined && project.version !== ""
+                        ? [" ", h("span.version", project.version)]
+                        : undefined,
+                    ),
+                    h(
+                      "button.close-button",
+                      {
+                        type: "button",
+                        popovertarget: "Site",
+                        popovertargetaction: "hide",
+                      },
+                      "Close",
+                    ),
+                  ),
+                  this.navigation(page),
+                ),
+                // Before the first frame, which page transitions show.
+                h("script", restoreNavigation),
                 this.toc(page),
-                h("nav.site", { "aria-label": "API" }, this.navigation(page)),
+                h("main#Main", { tabindex: "-1" }, content),
               ),
               h(
                 "dialog#Search",
                 { closedby: "any", "aria-label": "Search" },
                 h(
-                  "form",
-                  { method: "dialog", class: "search-bar" },
-                  h("button", { type: "submit" }, "Close"),
+                  "div.search-bar",
+                  h("input", {
+                    type: "search",
+                    placeholder: "Search the API",
+                    "aria-label": "Search the API",
+                    autocomplete: "off",
+                    autofocus: true,
+                  }),
+                  h(
+                    "form",
+                    { method: "dialog" },
+                    h("button", { type: "submit" }, "Close"),
+                  ),
                 ),
-                h("input", {
-                  type: "search",
-                  placeholder: "Search the API",
-                  "aria-label": "Search the API",
-                  autocomplete: "off",
-                  autofocus: true,
-                }),
                 h("ul.results", { "aria-live": "polite" }),
               ),
             ),
@@ -397,9 +493,29 @@ class HtmlWriter {
     return h(
       null,
       this.project.readme !== undefined && this.project.readme !== ""
-        ? h("p", [
-            h("a", { href: this.url(this.router.pages[0].url) }, "Overview"),
-            h("a", { href: this.url(this.router.indexUrl) }, "API reference"),
+        ? h("ul", [
+            h(
+              "li",
+              h(
+                "a",
+                {
+                  href: this.url(this.router.pages[0].url),
+                  "aria-current": page.kind === "readme" ? "page" : undefined,
+                },
+                "Overview",
+              ),
+            ),
+            h(
+              "li",
+              h(
+                "a",
+                {
+                  href: this.url(this.router.indexUrl),
+                  "aria-current": page.kind === "index" ? "page" : undefined,
+                },
+                "API reference",
+              ),
+            ),
           ])
         : undefined,
       sections(topLevel(this.project)).flatMap((section) => [
@@ -428,7 +544,7 @@ class HtmlWriter {
                         ? "deprecated"
                         : undefined,
                     },
-                    declaration.name,
+                    breakable(declaration.name),
                   ),
               categories &&
                 h(
@@ -468,28 +584,40 @@ class HtmlWriter {
     const categories = page.section
       ? undefined
       : this.router.categoryPages(current);
-    const list = page.section
-      ? [
-          {
-            ...page.section,
-            // Members of several categories are on their first one's page.
-            members: page.section.members.filter(
-              (member) => this.router.url(member)?.split("#")[0] === page.url,
+    let content: Result[];
+    if (categories) {
+      // The page indexes its categories, which have pages of their own.
+      content = [
+        h(
+          "ul",
+          categories.map(({ section }) =>
+            h(
+              "li",
+              h(
+                "a",
+                { href: `#${this.sectionAnchor(section!.title)}` },
+                section!.title,
+              ),
             ),
-          },
-        ]
-      : (categories?.map((category) => category.section!) ??
-        sections(current.children ?? []));
-    if (list.every((section) => section.members.length === 0)) {
-      return undefined;
-    }
-    // The index of categories' pages links to members on those pages.
-    const label = categories ? "Members" : "On this page";
-    return h(
-      "nav.toc",
-      { "aria-label": label },
-      h("h2", label),
-      list.flatMap((section) => [
+          ),
+        ),
+      ];
+    } else {
+      const list = page.section
+        ? [
+            {
+              ...page.section,
+              // Members of several categories are on their first one's page.
+              members: page.section.members.filter(
+                (member) => this.router.url(member)?.split("#")[0] === page.url,
+              ),
+            },
+          ]
+        : sections(current.children ?? []);
+      if (list.every((section) => section.members.length === 0)) {
+        return undefined;
+      }
+      content = list.flatMap((section) => [
         h("h3", section.title),
         h(
           "ul",
@@ -497,11 +625,30 @@ class HtmlWriter {
             const url = this.memberUrl(member);
             return url === undefined
               ? undefined
-              : h("li", h("a", { href: url }, member.name));
+              : h("li", h("a", { href: url }, breakable(member.name)));
           }),
         ),
-      ]),
+      ]);
+    }
+    // Collapsed where the page is too narrow for it to have a column.
+    return h(
+      "nav.toc",
+      { "aria-label": "On this page" },
+      h("details", h("summary", "On this page"), h("div.toc-list", content)),
     );
+  }
+
+  /**
+   * @param title A section's title.
+   * @returns The ID of its heading on the current page.
+   */
+  private sectionAnchor(title: string): string {
+    let anchor = this.sectionAnchors.get(title);
+    if (anchor === undefined) {
+      anchor = this.router.anchor(this.page, title);
+      this.sectionAnchors.set(title, anchor);
+    }
+    return anchor;
   }
 
   private index(project: Project): Result {
@@ -531,6 +678,7 @@ class HtmlWriter {
         "header.page-header",
         h(
           "p.kind",
+          { "data-kind": kindNames[declaration.kind] },
           `${kindNames[declaration.kind]} `,
           h("a", { href: this.memberUrl(declaration) }, declaration.name),
         ),
@@ -551,6 +699,8 @@ class HtmlWriter {
       "section",
       h(
         "h2",
+        // The index of a class's categories outlines them.
+        url === undefined ? {} : { id: this.sectionAnchor(section.title) },
         url === undefined
           ? section.title
           : h("a", { href: this.url(url) }, section.title),
@@ -562,7 +712,7 @@ class HtmlWriter {
           const href = this.memberUrl(member);
           const external =
             member.kind === "Reference" && member.type?.type === "reference";
-          const name = h("code", member.name);
+          const name = h("code", breakable(member.name));
           // Links to the member from before its declaration's page was split.
           const anchor = this.rendered.has(member)
             ? undefined
@@ -761,7 +911,7 @@ class HtmlWriter {
     level: number,
   ): Result[] {
     return tags.map(({ title, content }) =>
-      h("section.tag", h(`h${level}.tag-title`, title), this.text(content)),
+      h("section.tag", h(`h${level}.detail-title`, title), this.text(content)),
     );
   }
 
@@ -774,7 +924,7 @@ class HtmlWriter {
     }
     return h(
       null,
-      h(`h${level}`, "Type parameters"),
+      h(`h${level}.detail-title`, "Type parameters"),
       h(
         "dl.parameters",
         parameters.flatMap((parameter) => [
@@ -784,8 +934,8 @@ class HtmlWriter {
               "code",
               this.tokens(
                 tokens((printer) => {
-                  printer.typeParameters([parameter], true);
-                }).slice(1, -1),
+                  printer.typeParameter(parameter, true);
+                }),
               ),
             ),
           ),
@@ -802,7 +952,7 @@ class HtmlWriter {
     if (parameters.length === 0) return undefined;
     return h(
       null,
-      h(`h${level}`, "Parameters"),
+      h(`h${level}.detail-title`, "Parameters"),
       h(
         "dl.parameters",
         parameters.flatMap((parameter) => [
@@ -823,15 +973,24 @@ class HtmlWriter {
     );
   }
 
+  /**
+   * @param declaration A declaration with signatures.
+   * @param level The level of their details' headings.
+   * @param prefix A keyword before each, such as `function`.
+   * @param isSourceShown Whether each shows its source: not when the
+   *   declaration's heading shows the only one.
+   * @returns The signatures.
+   */
   private signatures(
     declaration: Declaration,
     level: number,
     prefix: string,
+    isSourceShown = true,
   ): Result[] {
     return signaturesOf(declaration).map((signature) =>
       h(
         "div.signature-block",
-        this.signature(signature, level, prefix, declaration),
+        this.signature(signature, level, prefix, declaration, isSourceShown),
       ),
     );
   }
@@ -841,6 +1000,7 @@ class HtmlWriter {
     level: number,
     prefix: string,
     declaration: Declaration,
+    isSourceShown: boolean,
   ): Result {
     // Construct signatures are named `new`, methods may be too.
     const name =
@@ -860,7 +1020,7 @@ class HtmlWriter {
           printer.signature(signature, name);
         }
       }),
-      definedIn(signature.sources),
+      isSourceShown ? definedIn(signature.sources) : undefined,
       this.text(signature.comment?.summary),
       this.signatureDetails(signature, level, declaration),
     );
@@ -881,9 +1041,11 @@ class HtmlWriter {
       this.parameterList(signature.parameters, level),
       ...(signature.returns
         ? [
-            h(`h${level}`, "Returns"),
-            h("p", h("code", this.type(signature.returns))),
-            this.text(returnsOf(comment)),
+            h(`h${level}.detail-title`, "Returns"),
+            h("p.returns", h("code", this.type(signature.returns))),
+            (returnsOf(comment) ?? []).length > 0
+              ? h("div.returns-description", this.text(returnsOf(comment)))
+              : undefined,
           ]
         : []),
       this.tags(blockTags(comment), level),
@@ -931,26 +1093,30 @@ class HtmlWriter {
       ["static", "abstract", "protected", "readonly", "optional"] as const
     ).filter((flag) => member.flags[flag]);
     if (isDeprecated(member)) flags.push("deprecated" as "static");
-    const heading = h(
-      `h${level}`,
-      { id: anchor },
-      h("a.anchor", { href: `#${anchor}` }, member.name),
-      flags.flatMap((flag) => [" ", h("span.badge", flag)]),
-    );
+    // A member's only source is on its heading's row; overloads show theirs.
+    let sources: Source[] | undefined;
     let body: Child;
     switch (member.kind) {
       case "Constructor":
       case "Method": {
-        body = this.signatures(member, level + 1, "");
+        const list = signaturesOf(member);
+        if (list.length === 1) [{ sources }] = list;
+        body = this.signatures(member, level + 1, "", list.length > 1);
         break;
       }
       case "Accessor": {
+        const accessors = [member.getSignature, member.setSignature];
+        const present = accessors.filter(
+          (signature) => signature !== undefined,
+        );
+        if (present.length === 1) [{ sources }] = present;
         body = h(
           null,
-          [member.getSignature, member.setSignature].map((signature, index) =>
+          accessors.map((signature, index) =>
             signature
               ? h(
-                  null,
+                  // Getters and setters are apart, as overloads are.
+                  "div.signature-block",
                   this.code((printer) => {
                     printer
                       .modifiers(member.flags)
@@ -958,7 +1124,7 @@ class HtmlWriter {
                       .punctuation(" ")
                       .signature(signature, member.name);
                   }),
-                  definedIn(signature.sources),
+                  present.length > 1 ? definedIn(signature.sources) : undefined,
                   this.text(signature.comment?.summary),
                   this.signatureDetails(signature, level + 1, member),
                 )
@@ -983,6 +1149,7 @@ class HtmlWriter {
         break;
       }
       default: {
+        ({ sources } = member);
         body = h(
           null,
           this.code((printer) => {
@@ -996,7 +1163,6 @@ class HtmlWriter {
                 .tokens.push({ kind: "literal", text: member.defaultValue });
             }
           }),
-          definedIn(member.sources),
           // Members of function types are described as functions.
           member.type?.type === "function"
             ? h(
@@ -1014,7 +1180,16 @@ class HtmlWriter {
         class: isDeprecated(member) ? "member deprecated" : "member",
         tabindex: anchor === undefined ? undefined : "-1",
       },
-      heading,
+      h(
+        "div.member-header",
+        h(
+          `h${level}.member-name`,
+          { id: anchor },
+          h("a.anchor", { href: `#${anchor}` }, breakable(member.name)),
+          flags.flatMap((flag) => [" ", h("span.badge", flag)]),
+        ),
+        sourceLink(sources),
+      ),
       body,
     );
   }
