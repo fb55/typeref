@@ -148,10 +148,15 @@ if (HTMLScriptElement.supports?.("speculationrules")) {
       {
         where: {
           and: [
-            { href_matches: `${new URL(base, location.href).pathname}*` },
+            // The pages typeref wrote, under these docs' path.
+            {
+              href_matches: {
+                pathname: `${new URL(base, location.href).pathname}*.html`,
+              },
+            },
             {
               selector_matches:
-                ".site a, .toc a, dl.index dt a, code a, .results a",
+                ".site a, .toc a, dl.index dt a, code a.n, .results a",
             },
           ],
         },
