@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - A redesigned HTML theme that works on every screen: the navigation is a
   menu on phones, and "On this page" stays in reach as you read. Signatures
