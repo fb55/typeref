@@ -745,6 +745,7 @@ main h2 {
 }
 
 .source-link {
+  min-width: 0;
   font-size: 0.8rem;
 }
 
@@ -851,6 +852,8 @@ dd > p:last-child {
 /* Indexes: names beside summaries where there is room, aligned throughout. */
 dl.index {
   display: grid;
+  /* Long names wrap rather than widen the page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0 1.5rem;
   margin: 0.75rem 0;
 }

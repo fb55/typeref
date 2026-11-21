@@ -138,14 +138,23 @@ document.addEventListener("keydown", (event) => {
 });
 
 // Pages of these docs that a reader points at load ahead, where browsers
-// can; other links on the site, such as an application's, do not.
+// can: only through links typeref made, never through authored ones, which
+// may lead to an application on the same origin.
 if (HTMLScriptElement.supports?.("speculationrules")) {
   const rules = document.createElement("script");
   rules.type = "speculationrules";
   rules.textContent = JSON.stringify({
     prerender: [
       {
-        where: { href_matches: `${new URL(base, location.href).pathname}*` },
+        where: {
+          and: [
+            { href_matches: `${new URL(base, location.href).pathname}*` },
+            {
+              selector_matches:
+                ".site a, .toc a, dl.index dt a, code a, .results a",
+            },
+          ],
+        },
         eagerness: "moderate",
       },
     ],

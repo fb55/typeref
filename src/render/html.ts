@@ -712,7 +712,7 @@ class HtmlWriter {
           const href = this.memberUrl(member);
           const external =
             member.kind === "Reference" && member.type?.type === "reference";
-          const name = h("code", member.name);
+          const name = h("code", breakable(member.name));
           // Links to the member from before its declaration's page was split.
           const anchor = this.rendered.has(member)
             ? undefined
