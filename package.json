@@ -65,7 +65,7 @@
     "mdast-util-to-markdown": "^2.2.4",
     "mdast-util-to-string": "^4.0.0",
     "micromark-extension-gfm": "^3.0.0",
-    "oxc-parser": "^0.159.0",
+    "oxc-parser": "^0.160.0",
     "oxc-resolver": "^11.24.2",
     "shiki": "^4.6.0"
   },
